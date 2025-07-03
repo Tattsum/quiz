@@ -214,6 +214,9 @@
             <NuxtLink to="/questions" class="btn-secondary w-full text-sm text-center block">
               問題管理
             </NuxtLink>
+            <NuxtLink to="/projector" target="_blank" class="btn-primary w-full text-sm text-center block">
+              プロジェクター画面
+            </NuxtLink>
           </div>
         </div>
       </div>
