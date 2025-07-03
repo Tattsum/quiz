@@ -1,24 +1,42 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
-    "config:base"
+    "config:recommended",
+    "config:best-practices",
+    ":timezone(Asia/Tokyo)"
   ],
   "schedule": [
-    "before 6am on Monday"
+    "after 7am every weekday",
+    "before 10am every weekday"
   ],
-  "timezone": "Asia/Tokyo",
   "assigneesFromCodeOwners": true,
   "reviewersFromCodeOwners": true,
   "prConcurrentLimit": 3,
+  "labels": ["dependencies", "renovate"],
   "lockFileMaintenance": {
     "enabled": true,
     "schedule": ["before 6am on Monday"]
   },
+  "major": {
+    "minimumReleaseAge": "5 days"
+  },
+  "minor": {
+    "minimumReleaseAge": "3 days"
+  },
+  "patch": {
+    "minimumReleaseAge": "2 days"
+  },
+  "platformAutomerge": true,
+  "postUpdateOptions": [
+    "gomodTidy",
+    "gomodUpdateImportPaths"
+  ],
   "packageRules": [
     {
       "matchManagers": ["gomod"],
       "groupName": "Go dependencies",
-      "schedule": ["before 6am on Monday"],
+      "labels": ["go", "dependencies"],
+      "schedule": ["before 10am every weekday"],
       "automerge": false,
       "reviewersFromCodeOwners": true
     },
@@ -26,7 +44,8 @@
       "matchManagers": ["npm"],
       "matchPaths": ["admin-dashboard/**"],
       "groupName": "Nuxt3 Admin Dashboard dependencies",
-      "schedule": ["before 6am on Monday"],
+      "labels": ["nuxt", "dependencies"],
+      "schedule": ["before 10am every weekday"],
       "automerge": false,
       "reviewersFromCodeOwners": true
     },
@@ -34,14 +53,16 @@
       "matchManagers": ["npm"],
       "matchPaths": ["participant-app/**"],
       "groupName": "Next.js Participant App dependencies",
-      "schedule": ["before 6am on Monday"],
+      "labels": ["nextjs", "dependencies"],
+      "schedule": ["before 10am every weekday"],
       "automerge": false,
       "reviewersFromCodeOwners": true
     },
     {
       "matchDepTypes": ["devDependencies"],
       "groupName": "Dev dependencies",
-      "schedule": ["before 6am on Monday"],
+      "labels": ["devDependencies"],
+      "schedule": ["before 10am every weekday"],
       "automerge": false
     },
     {
@@ -53,7 +74,7 @@
     {
       "matchUpdateTypes": ["minor"],
       "groupName": "Minor updates",
-      "schedule": ["before 6am on Monday"]
+      "schedule": ["before 10am every weekday"]
     },
     {
       "matchUpdateTypes": ["major"],
@@ -69,10 +90,29 @@
   "dependencyDashboard": true,
   "dependencyDashboardTitle": "Dependency Dashboard",
   "dependencyDashboardApproval": false,
-  "labels": ["dependencies", "renovate"],
   "commitMessagePrefix": "chore(deps):",
   "commitMessageAction": "{{#if isPin}}pin{{else}}update{{/if}}",
   "commitMessageTopic": "{{depName}}{{#if isMajor}} (major){{/if}}",
   "commitMessageExtra": "{{#if isRange}} to {{newValue}}{{/if}}{{#if isPinDigest}} {{newDigestShort}}{{/if}}",
-  "prBodyTemplate": "This PR contains the following updates:\n\n| Package | Change | Age | Adoption | Passing | Confidence |\n|---------|--------|-----|----------|---------|------------|\n{{#each upgrades as |upgrade|}}\n| {{upgrade.depName}} | {{#if upgrade.displayFrom}}{{upgrade.displayFrom}} → {{upgrade.displayTo}}{{else}}{{upgrade.newValue}}{{/if}} | [![age](https://badges.renovateapi.com/packages/{{upgrade.datasource}}/{{replace '/' '%2f' upgrade.depName}}/{{upgrade.newVersion}}/age-slim)](https://docs.renovatebot.com/merge-confidence/) | [![adoption](https://badges.renovateapi.com/packages/{{upgrade.datasource}}/{{replace '/' '%2f' upgrade.depName}}/{{upgrade.newVersion}}/adoption-slim)](https://docs.renovatebot.com/merge-confidence/) | [![passing](https://badges.renovateapi.com/packages/{{upgrade.datasource}}/{{replace '/' '%2f' upgrade.depName}}/{{upgrade.newVersion}}/compatibility-slim/{{upgrade.currentVersion}})](https://docs.renovatebot.com/merge-confidence/) | [![confidence](https://badges.renovateapi.com/packages/{{upgrade.datasource}}/{{replace '/' '%2f' upgrade.depName}}/{{upgrade.newVersion}}/confidence-slim/{{upgrade.currentVersion}})](https://docs.renovatebot.com/merge-confidence/) |\n{{/each}}\n\n---\n\n### Configuration\n\n📅 **Schedule**: {{schedule}}\n\n🚦 **Automerge**: {{automerge}}\n\n♻ **Rebasing**: {{rebaseWhen}}\n\n🔕 **Ignore**: Close this PR and you won't be reminded about these updates again.\n\n---"
+  "prBodyTemplate": "This PR contains the following updates:\n\n| Package | Change | Age | Adoption | Passing | Confidence |\n|---------|--------|-----|----------|---------|------------|\n{{#each upgrades as |upgrade|}}\n| {{upgrade.depName}} | {{#if upgrade.displayFrom}}{{upgrade.displayFrom}} → {{upgrade.displayTo}}{{else}}{{upgrade.newValue}}{{/if}} | [![age](https://badges.renovateapi.com/packages/{{upgrade.datasource}}/{{replace '/' '%2f' upgrade.depName}}/{{upgrade.newVersion}}/age-slim)](https://docs.renovatebot.com/merge-confidence/) | [![adoption](https://badges.renovateapi.com/packages/{{upgrade.datasource}}/{{replace '/' '%2f' upgrade.depName}}/{{upgrade.newVersion}}/adoption-slim)](https://docs.renovatebot.com/merge-confidence/) | [![passing](https://badges.renovateapi.com/packages/{{upgrade.datasource}}/{{replace '/' '%2f' upgrade.depName}}/{{upgrade.newVersion}}/compatibility-slim/{{upgrade.currentVersion}})](https://docs.renovatebot.com/merge-confidence/) | [![confidence](https://badges.renovateapi.com/packages/{{upgrade.datasource}}/{{replace '/' '%2f' upgrade.depName}}/{{upgrade.newVersion}}/confidence-slim/{{upgrade.currentVersion}})](https://docs.renovatebot.com/merge-confidence/) |\n{{/each}}\n\n---\n\n### Configuration\n\n📅 **Schedule**: {{schedule}}\n\n🚦 **Automerge**: {{automerge}}\n\n♻ **Rebasing**: {{rebaseWhen}}\n\n🔕 **Ignore**: Close this PR and you won't be reminded about these updates again.\n\n---",
+  "customManagers": [
+    {
+      "customType": "regex",
+      "fileMatch": ["^Makefile$"],
+      "matchStrings": [
+        "GOLANGCI_LINT_VERSION := (?<currentValue>v?\\d+\\.\\d+\\.\\d+)"
+      ],
+      "datasourceTemplate": "github-releases",
+      "depNameTemplate": "golangci/golangci-lint"
+    },
+    {
+      "customType": "regex",
+      "fileMatch": ["^Makefile$"],
+      "matchStrings": [
+        "GOFUMPT_VERSION := (?<currentValue>v?\\d+\\.\\d+\\.\\d+)"
+      ],
+      "datasourceTemplate": "go",
+      "depNameTemplate": "mvdan.cc/gofumpt"
+    }
+  ]
 }
