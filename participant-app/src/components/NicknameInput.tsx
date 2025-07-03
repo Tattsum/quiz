@@ -69,7 +69,6 @@ export default function NicknameInput({ onSubmit, loading = false }: NicknameInp
               onChange={handleInputChange}
               className="input-primary w-full"
               placeholder="例: たろう"
-              maxLength={20}
               disabled={loading}
               autoFocus
               aria-describedby={error ? "nickname-error" : undefined}
