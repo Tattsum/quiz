@@ -27,6 +27,26 @@ func TestGetQuizzes(t *testing.T) {
 		t.Fatalf("Database connection failed in test environment: %v", err)
 	}
 
+	// テスト用データを作成
+	db := database.GetDB()
+	_, err = db.Exec(`
+		INSERT INTO quizzes (id, question_text, option_a, option_b, option_c, option_d, correct_answer, created_at, updated_at)
+		VALUES 
+		(1, 'Test Question 1?', 'Option A', 'Option B', 'Option C', 'Option D', 'A', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+		(2, 'Test Question 2?', 'Option A', 'Option B', 'Option C', 'Option D', 'B', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+		ON CONFLICT (id) DO UPDATE SET
+			question_text = EXCLUDED.question_text,
+			option_a = EXCLUDED.option_a,
+			option_b = EXCLUDED.option_b,
+			option_c = EXCLUDED.option_c,
+			option_d = EXCLUDED.option_d,
+			correct_answer = EXCLUDED.correct_answer,
+			updated_at = CURRENT_TIMESTAMP
+	`)
+	if err != nil {
+		t.Fatalf("Failed to create test quizzes: %v", err)
+	}
+
 	tests := []struct {
 		name           string
 		queryParams    string
@@ -86,6 +106,24 @@ func TestGetQuiz(t *testing.T) {
 		t.Skipf("Database connection failed (not in test environment): %v", err)
 	} else if err != nil {
 		t.Fatalf("Database connection failed in test environment: %v", err)
+	}
+
+	// テスト用データを確実に存在させる
+	db := database.GetDB()
+	_, err = db.Exec(`
+		INSERT INTO quizzes (id, question_text, option_a, option_b, option_c, option_d, correct_answer, created_at, updated_at)
+		VALUES (1, 'Test Question?', 'Option A', 'Option B', 'Option C', 'Option D', 'A', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+		ON CONFLICT (id) DO UPDATE SET
+			question_text = 'Test Question?',
+			option_a = 'Option A',
+			option_b = 'Option B',
+			option_c = 'Option C',
+			option_d = 'Option D',
+			correct_answer = 'A',
+			updated_at = CURRENT_TIMESTAMP
+	`)
+	if err != nil {
+		t.Fatalf("Failed to create test quiz: %v", err)
 	}
 
 	tests := []struct {
