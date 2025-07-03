@@ -1,0 +1,49 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+  font-family: Inter, system-ui, sans-serif;
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+/* ユニバーサルデザイン対応 */
+.btn-primary {
+  @apply bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-8 rounded-lg text-xl transition-all duration-200 border-2 border-blue-600 hover:border-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-300;
+  min-height: 64px;
+  min-width: 120px;
+}
+
+.btn-answer {
+  @apply bg-gray-100 hover:bg-gray-200 text-gray-900 font-bold py-6 px-8 rounded-lg text-2xl transition-all duration-200 border-2 border-gray-300 hover:border-gray-400 focus:outline-none focus:ring-4 focus:ring-blue-300;
+  min-height: 80px;
+  min-width: 160px;
+}
+
+.btn-answer.selected {
+  @apply bg-blue-600 text-white border-blue-600 shadow-lg;
+}
+
+.input-primary {
+  @apply border-2 border-gray-300 rounded-lg px-4 py-3 text-lg focus:outline-none focus:ring-4 focus:ring-blue-300 focus:border-blue-500;
+  min-height: 56px;
+}

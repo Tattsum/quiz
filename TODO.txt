@@ -91,6 +91,15 @@ Go言語でWebSocketを使用したリアルタイム通信機能を実装
 - internal/services/quiz_service.go: QuizService型・exported関数コメント追加
 - internal/handlers/websocket.go: MaxConnections定数コメント追加
 
+### [進行中] スマートフォン向け参加者画面（Next.js 14）の実装
+- ニックネーム入力画面の作成
+- 回答画面（A/B/C/D の4つの大きなボタン）の作成
+- 選択中の回答をハイライト表示機能
+- 回答変更可能機能（投票終了まで）
+- 待機画面（次の問題まで）の作成
+- 最終結果表示画面の作成
+- ユニバーサルデザイン対応（大きなボタン、高コントラスト、読みやすいフォント）
+
 ## 過去の作業履歴
 データベース設計は完了済み:
 - database_schema.sql: データベーススキーマ（CREATE TABLE文）
