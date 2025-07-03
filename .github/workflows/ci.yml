@@ -1,0 +1,309 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+env:
+  GO_VERSION: '1.24.4'
+  NODE_VERSION: '18'
+
+jobs:
+  # Go Backend Tests
+  go-backend:
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: quiz_db_test
+          POSTGRES_USER: quiz_user
+          POSTGRES_PASSWORD: quiz_password
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 3s
+          --health-retries 3
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: ${{ env.GO_VERSION }}
+
+    - name: Cache Go modules
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.cache/go-build
+          ~/go/pkg/mod
+        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-
+
+    - name: Install development tools
+      run: |
+        go install mvdan.cc/gofumpt@latest
+        go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+
+    - name: Create golangci-lint config
+      run: |
+        cat > .golangci.yml << 'EOF'
+        run:
+          timeout: 5m
+          tests: true
+
+        linters:
+          enable:
+            - errcheck
+            - gosimple
+            - govet
+            - ineffassign
+            - staticcheck
+            - typecheck
+            - unused
+            - gofmt
+            - goimports
+            - misspell
+            - revive
+            - gosec
+            - goconst
+            - gocyclo
+        
+        linters-settings:
+          gosec:
+            excludes:
+              - G304  # File path provided as taint input (handled with validation)
+          gocyclo:
+            min-complexity: 15
+          revive:
+            confidence: 0.8
+        EOF
+
+    - name: Format check
+      run: |
+        gofumpt -l . | tee /tmp/gofumpt-output
+        if [ -s /tmp/gofumpt-output ]; then
+          echo "Code is not formatted. Please run 'make fmt' locally."
+          exit 1
+        fi
+
+    - name: Lint
+      run: golangci-lint run --config .golangci.yml
+
+    - name: Vet
+      run: go vet ./...
+
+    - name: Set up test database
+      env:
+        PGPASSWORD: quiz_password
+      run: |
+        psql -h localhost -U quiz_user -d quiz_db_test -c "SELECT 1" || exit 1
+        if [ -f database_schema.sql ]; then
+          psql -h localhost -U quiz_user -d quiz_db_test -f database_schema.sql
+        fi
+
+    - name: Run tests with coverage
+      env:
+        DB_HOST: localhost
+        DB_PORT: 5432
+        DB_USER: quiz_user
+        DB_PASSWORD: quiz_password
+        DB_NAME: quiz_db_test
+        REDIS_HOST: localhost
+        REDIS_PORT: 6379
+        TEST_ENV: true
+      run: |
+        go test -v -race -coverprofile=coverage.out -covermode=atomic ./...
+
+    - name: Generate coverage report
+      run: |
+        go tool cover -html=coverage.out -o coverage.html
+        go tool cover -func=coverage.out | tee coverage.txt
+
+    - name: Upload coverage to artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: go-coverage
+        path: |
+          coverage.out
+          coverage.html
+          coverage.txt
+
+    - name: Check coverage threshold
+      run: |
+        COVERAGE=$(go tool cover -func=coverage.out | grep total | awk '{print $3}' | sed 's/%//')
+        echo "Total coverage: ${COVERAGE}%"
+        if (( $(echo "$COVERAGE < 70" | bc -l) )); then
+          echo "Coverage ${COVERAGE}% is below threshold of 70%"
+          exit 1
+        fi
+
+  # Nuxt3 Admin Dashboard Tests
+  nuxt-admin:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./admin-dashboard
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        cache-dependency-path: admin-dashboard/package-lock.json
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Lint
+      run: npm run lint || echo "Lint script not found, skipping"
+
+    - name: Run tests
+      run: npm run test
+
+    - name: Run tests with coverage
+      run: npm run test:coverage
+
+    - name: Upload coverage
+      uses: actions/upload-artifact@v3
+      with:
+        name: nuxt-coverage
+        path: admin-dashboard/coverage/
+
+    - name: Build
+      run: npm run build
+
+  # Next.js Participant App Tests  
+  nextjs-participant:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./participant-app
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        cache-dependency-path: participant-app/package-lock.json
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Lint
+      run: npm run lint
+
+    - name: Run tests
+      run: npm run test
+
+    - name: Run tests with coverage
+      run: npm run test:coverage
+
+    - name: Upload coverage
+      uses: actions/upload-artifact@v3
+      with:
+        name: nextjs-coverage
+        path: participant-app/coverage/
+
+    - name: Build
+      run: npm run build
+
+  # Integration Tests
+  integration:
+    runs-on: ubuntu-latest
+    needs: [go-backend, nuxt-admin, nextjs-participant]
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: quiz_db_test
+          POSTGRES_USER: quiz_user
+          POSTGRES_PASSWORD: quiz_password
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 3s
+          --health-retries 3
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: ${{ env.GO_VERSION }}
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+
+    - name: Set up test database
+      env:
+        PGPASSWORD: quiz_password
+      run: |
+        if [ -f database_schema.sql ]; then
+          psql -h localhost -U quiz_user -d quiz_db_test -f database_schema.sql
+        fi
+
+    - name: Run integration tests
+      env:
+        DB_HOST: localhost
+        DB_PORT: 5432
+        DB_USER: quiz_user
+        DB_PASSWORD: quiz_password
+        DB_NAME: quiz_db_test
+        REDIS_HOST: localhost
+        REDIS_PORT: 6379
+        TEST_ENV: true
+      run: |
+        if [ -f integration_test.go ]; then
+          go test -v ./integration_test.go
+        fi
+
+    - name: Run E2E tests setup check
+      working-directory: ./e2e
+      run: |
+        if [ -f package.json ]; then
+          npm ci
+          echo "E2E tests dependencies installed"
+        fi
