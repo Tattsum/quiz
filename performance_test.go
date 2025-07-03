@@ -611,11 +611,11 @@ func TestSystemLoadUnder70Users(t *testing.T) {
 
 					// 3. 複数回の回答送信（時間内で）
 					for time.Since(userStartTime) < duration/2 {
-									answerReq := models.AnswerRequest{
-				ParticipantID:  participantID,
-				QuizID:         2,
-				SelectedOption: []string{"A", "B", "C", "D"}[userNum%4],
-			}
+						answerReq := models.AnswerRequest{
+							ParticipantID:  participantID,
+							QuizID:         2,
+							SelectedOption: []string{"A", "B", "C", "D"}[userNum%4],
+						}
 
 						jsonData, _ := json.Marshal(answerReq)
 						reqStart := time.Now()
