@@ -3,6 +3,8 @@ package models
 
 import (
 	"time"
+
+	"github.com/golang-jwt/jwt/v5"
 )
 
 // Administrator represents the administrators table
@@ -78,9 +80,30 @@ type LoginRequest struct {
 
 // LoginResponse represents admin login response
 type LoginResponse struct {
-	Token     string        `json:"token"`
-	ExpiresAt time.Time     `json:"expires_at"`
-	Admin     Administrator `json:"admin"`
+	AccessToken  string        `json:"access_token"`
+	RefreshToken string        `json:"refresh_token"`
+	ExpiresAt    time.Time     `json:"expires_at"`
+	Admin        Administrator `json:"admin"`
+}
+
+// RefreshTokenRequest represents refresh token request
+type RefreshTokenRequest struct {
+	RefreshToken string `json:"refresh_token" binding:"required"`
+}
+
+// RefreshTokenResponse represents refresh token response
+type RefreshTokenResponse struct {
+	AccessToken  string    `json:"access_token"`
+	RefreshToken string    `json:"refresh_token"`
+	ExpiresAt    time.Time `json:"expires_at"`
+}
+
+// JWTClaims represents JWT token claims
+type JWTClaims struct {
+	AdminID  int64  `json:"admin_id"`
+	Username string `json:"username"`
+	Type     string `json:"type"` // "access" or "refresh"
+	jwt.RegisteredClaims
 }
 
 // QuizRequest represents quiz creation/update request
