@@ -58,7 +58,7 @@ func TestGetQuizzes(t *testing.T) {
 			GetQuizzes(c)
 
 			if w.Code != tt.expectedStatus {
-				t.Errorf("Expected status %d, got %d", tt.expectedStatus, w.Code)
+				t.Errorf("Expected status %d, got %d. Response body: %s", tt.expectedStatus, w.Code, w.Body.String())
 			}
 
 			var response models.APIResponse
@@ -122,7 +122,7 @@ func TestGetQuiz(t *testing.T) {
 			GetQuiz(c)
 
 			if w.Code != tt.expectedStatus {
-				t.Errorf("Expected status %d, got %d", tt.expectedStatus, w.Code)
+				t.Errorf("Expected status %d, got %d. Response body: %s", tt.expectedStatus, w.Code, w.Body.String())
 			}
 		})
 	}
@@ -196,7 +196,7 @@ func TestCreateQuiz(t *testing.T) {
 			CreateQuiz(c)
 
 			if w.Code != tt.expectedStatus {
-				t.Errorf("Expected status %d, got %d", tt.expectedStatus, w.Code)
+				t.Errorf("Expected status %d, got %d. Response body: %s", tt.expectedStatus, w.Code, w.Body.String())
 			}
 		})
 	}
@@ -279,7 +279,7 @@ func TestUpdateQuiz(t *testing.T) {
 			UpdateQuiz(c)
 
 			if w.Code != tt.expectedStatus {
-				t.Errorf("Expected status %d, got %d", tt.expectedStatus, w.Code)
+				t.Errorf("Expected status %d, got %d. Response body: %s", tt.expectedStatus, w.Code, w.Body.String())
 			}
 		})
 	}
@@ -333,7 +333,7 @@ func TestDeleteQuiz(t *testing.T) {
 			DeleteQuiz(c)
 
 			if w.Code != tt.expectedStatus {
-				t.Errorf("Expected status %d, got %d", tt.expectedStatus, w.Code)
+				t.Errorf("Expected status %d, got %d. Response body: %s", tt.expectedStatus, w.Code, w.Body.String())
 			}
 		})
 	}

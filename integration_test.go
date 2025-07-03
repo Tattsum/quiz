@@ -29,7 +29,7 @@ var (
 func TestMain(m *testing.M) {
 	// テスト用の環境変数を設定
 	os.Setenv("ENV", "test")
-	os.Setenv("DATABASE_URL", "postgres://postgres:password@localhost:5432/quiz_test?sslmode=disable")
+	os.Setenv("DATABASE_URL", "postgres://quiz_user:quiz_password@localhost:5433/quiz_db_test?sslmode=disable")
 	os.Setenv("JWT_SECRET", "test_secret_key_for_testing_only")
 
 	// .envファイルを読み込み（テスト環境では無視される場合がある）

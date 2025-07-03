@@ -83,7 +83,7 @@ func TestRegisterParticipant(t *testing.T) {
 			RegisterParticipant(c)
 
 			if w.Code != tt.expectedStatus {
-				t.Errorf("Expected status %d, got %d", tt.expectedStatus, w.Code)
+				t.Errorf("Expected status %d, got %d. Response body: %s", tt.expectedStatus, w.Code, w.Body.String())
 			}
 		})
 	}
@@ -137,7 +137,7 @@ func TestGetParticipant(t *testing.T) {
 			GetParticipant(c)
 
 			if w.Code != tt.expectedStatus {
-				t.Errorf("Expected status %d, got %d", tt.expectedStatus, w.Code)
+				t.Errorf("Expected status %d, got %d. Response body: %s", tt.expectedStatus, w.Code, w.Body.String())
 			}
 		})
 	}
@@ -191,7 +191,7 @@ func TestGetParticipantAnswers(t *testing.T) {
 			GetParticipantAnswers(c)
 
 			if w.Code != tt.expectedStatus {
-				t.Errorf("Expected status %d, got %d", tt.expectedStatus, w.Code)
+				t.Errorf("Expected status %d, got %d. Response body: %s", tt.expectedStatus, w.Code, w.Body.String())
 			}
 		})
 	}
@@ -219,8 +219,8 @@ func TestSubmitAnswer(t *testing.T) {
 		{
 			name: "Submit answer with valid data",
 			requestBody: models.AnswerRequest{
-				ParticipantID:  1,
-				QuizID:         1,
+				ParticipantID:  3,  // 未使用の参加者IDを使用
+				QuizID:         3,  // 未使用のクイズIDを使用
 				SelectedOption: "A",
 			},
 			expectedStatus: http.StatusCreated,
@@ -272,7 +272,7 @@ func TestSubmitAnswer(t *testing.T) {
 			SubmitAnswer(c)
 
 			if w.Code != tt.expectedStatus {
-				t.Errorf("Expected status %d, got %d", tt.expectedStatus, w.Code)
+				t.Errorf("Expected status %d, got %d. Response body: %s", tt.expectedStatus, w.Code, w.Body.String())
 			}
 		})
 	}
@@ -353,7 +353,7 @@ func TestUpdateAnswer(t *testing.T) {
 			UpdateAnswer(c)
 
 			if w.Code != tt.expectedStatus {
-				t.Errorf("Expected status %d, got %d", tt.expectedStatus, w.Code)
+				t.Errorf("Expected status %d, got %d. Response body: %s", tt.expectedStatus, w.Code, w.Body.String())
 			}
 		})
 	}

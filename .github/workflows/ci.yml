@@ -120,6 +120,9 @@ jobs:
         if [ -f database_schema.sql ]; then
           psql -h localhost -U quiz_user -d quiz_db_test -f database_schema.sql
         fi
+        if [ -f test_data.sql ]; then
+          psql -h localhost -U quiz_user -d quiz_db_test -f test_data.sql
+        fi
 
     - name: Run tests with coverage
       env:
@@ -283,6 +286,9 @@ jobs:
       run: |
         if [ -f database_schema.sql ]; then
           psql -h localhost -U quiz_user -d quiz_db_test -f database_schema.sql
+        fi
+        if [ -f test_data.sql ]; then
+          psql -h localhost -U quiz_user -d quiz_db_test -f test_data.sql
         fi
 
     - name: Run integration tests
