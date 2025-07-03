@@ -125,7 +125,7 @@ func UploadImage(c *gin.Context) {
 
 	// Ensure upload directory exists
 	uploadDir := "uploads/images"
-	if err := os.MkdirAll(uploadDir, 0755); err != nil {
+	if err := os.MkdirAll(uploadDir, 0o755); err != nil {
 		c.JSON(http.StatusInternalServerError, models.APIResponse{
 			Success: false,
 			Error: &models.APIError{

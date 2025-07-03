@@ -27,7 +27,6 @@ func GetSessionStatus(c *gin.Context) {
 		&session.CreatedAt,
 		&session.UpdatedAt,
 	)
-
 	if err != nil {
 		if err == sql.ErrNoRows {
 			c.JSON(http.StatusOK, models.APIResponse{
@@ -133,7 +132,6 @@ func StartSession(c *gin.Context) {
 		&quiz.ImageURL,
 		&quiz.VideoURL,
 	)
-
 	if err != nil {
 		if err == sql.ErrNoRows {
 			c.JSON(http.StatusNotFound, models.APIResponse{
@@ -228,7 +226,6 @@ func NextQuestion(c *gin.Context) {
 		&quiz.ImageURL,
 		&quiz.VideoURL,
 	)
-
 	if err != nil {
 		if err == sql.ErrNoRows {
 			c.JSON(http.StatusNotFound, models.APIResponse{
