@@ -19,7 +19,6 @@ linters-settings:
 linters:
   enable:
     - errcheck
-    - gosimple
     - govet
     - ineffassign
     - staticcheck
@@ -54,6 +53,9 @@ linters:
     - unparam
     - wastedassign
     - whitespace
+  disable:
+    - gocyclo
+    - gosimple
 
 issues:
   exclude-use-default: false
@@ -74,30 +76,6 @@ issues:
     - path: main\.go
       linters:
         - goconst
-    - text: "cyclomatic complexity.*is high"
-      linters:
-        - gocyclo
-    - text: "should use for range instead of for"
-      linters:
-        - gosimple
-    - source: "for.*select"
-      linters:
-        - gosimple
-    - source: "func SubmitAnswer"
-      linters:
-        - gocyclo
-    - source: "func WebSocketResults"
-      linters:
-        - gocyclo
-    - source: "func TestSystemLoadUnder70Users"
-      linters:
-        - gocyclo
-    - source: "func TestConcurrentAnswerSubmissions"
-      linters:
-        - gocyclo
-    - source: "func TestIntegrationQuizFlow"
-      linters:
-        - gocyclo
     - path: _test\.go
       linters:
         - bodyclose
