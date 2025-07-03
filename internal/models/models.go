@@ -23,29 +23,29 @@ type Participant struct {
 
 // Quiz represents the quizzes table
 type Quiz struct {
-	ID           int64     `json:"id" db:"id"`
-	QuestionText string    `json:"question_text" db:"question_text"`
-	OptionA      string    `json:"option_a" db:"option_a"`
-	OptionB      string    `json:"option_b" db:"option_b"`
-	OptionC      string    `json:"option_c" db:"option_c"`
-	OptionD      string    `json:"option_d" db:"option_d"`
-	CorrectAnswer string   `json:"correct_answer,omitempty" db:"correct_answer"`
-	ImageURL     *string   `json:"image_url" db:"image_url"`
-	VideoURL     *string   `json:"video_url" db:"video_url"`
-	CreatedAt    time.Time `json:"created_at" db:"created_at"`
-	UpdatedAt    time.Time `json:"updated_at" db:"updated_at"`
+	ID            int64     `json:"id" db:"id"`
+	QuestionText  string    `json:"question_text" db:"question_text"`
+	OptionA       string    `json:"option_a" db:"option_a"`
+	OptionB       string    `json:"option_b" db:"option_b"`
+	OptionC       string    `json:"option_c" db:"option_c"`
+	OptionD       string    `json:"option_d" db:"option_d"`
+	CorrectAnswer string    `json:"correct_answer,omitempty" db:"correct_answer"`
+	ImageURL      *string   `json:"image_url" db:"image_url"`
+	VideoURL      *string   `json:"video_url" db:"video_url"`
+	CreatedAt     time.Time `json:"created_at" db:"created_at"`
+	UpdatedAt     time.Time `json:"updated_at" db:"updated_at"`
 }
 
 // QuizPublic represents a quiz without the correct answer (for public display)
 type QuizPublic struct {
-	ID           int64     `json:"id"`
-	QuestionText string    `json:"question_text"`
-	OptionA      string    `json:"option_a"`
-	OptionB      string    `json:"option_b"`
-	OptionC      string    `json:"option_c"`
-	OptionD      string    `json:"option_d"`
-	ImageURL     *string   `json:"image_url"`
-	VideoURL     *string   `json:"video_url"`
+	ID           int64   `json:"id"`
+	QuestionText string  `json:"question_text"`
+	OptionA      string  `json:"option_a"`
+	OptionB      string  `json:"option_b"`
+	OptionC      string  `json:"option_c"`
+	OptionD      string  `json:"option_d"`
+	ImageURL     *string `json:"image_url"`
+	VideoURL     *string `json:"video_url"`
 }
 
 // Answer represents the answers table
@@ -60,11 +60,11 @@ type Answer struct {
 
 // QuizSession represents the quiz_sessions table
 type QuizSession struct {
-	ID                  int64     `json:"id" db:"id"`
-	CurrentQuizID       *int64    `json:"current_quiz_id" db:"current_quiz_id"`
-	IsAcceptingAnswers  bool      `json:"is_accepting_answers" db:"is_accepting_answers"`
-	CreatedAt           time.Time `json:"created_at" db:"created_at"`
-	UpdatedAt           time.Time `json:"updated_at" db:"updated_at"`
+	ID                 int64     `json:"id" db:"id"`
+	CurrentQuizID      *int64    `json:"current_quiz_id" db:"current_quiz_id"`
+	IsAcceptingAnswers bool      `json:"is_accepting_answers" db:"is_accepting_answers"`
+	CreatedAt          time.Time `json:"created_at" db:"created_at"`
+	UpdatedAt          time.Time `json:"updated_at" db:"updated_at"`
 }
 
 // Request/Response DTOs
@@ -128,24 +128,24 @@ type ToggleAnswersRequest struct {
 
 // SessionStatusResponse represents session status response
 type SessionStatusResponse struct {
-	SessionID          int64      `json:"session_id"`
+	SessionID          int64       `json:"session_id"`
 	CurrentQuiz        *QuizPublic `json:"current_quiz"`
-	IsAcceptingAnswers bool       `json:"is_accepting_answers"`
-	TotalParticipants  int        `json:"total_participants"`
-	AnswersCount       int        `json:"answers_count"`
+	IsAcceptingAnswers bool        `json:"is_accepting_answers"`
+	TotalParticipants  int         `json:"total_participants"`
+	AnswersCount       int         `json:"answers_count"`
 }
 
 // QuizResultsResponse represents quiz results response
 type QuizResultsResponse struct {
-	QuizID            int64                    `json:"quiz_id"`
-	QuestionText      string                   `json:"question_text"`
-	TotalAnswers      int                      `json:"total_answers"`
-	Results           map[string]OptionResult  `json:"results"`
-	CorrectAnswer     string                   `json:"correct_answer"`
-	CorrectCount      int                      `json:"correct_count"`
-	CorrectPercentage float64                  `json:"correct_percentage"`
+	QuizID             int64                   `json:"quiz_id"`
+	QuestionText       string                  `json:"question_text"`
+	TotalAnswers       int                     `json:"total_answers"`
+	Results            map[string]OptionResult `json:"results"`
+	CorrectAnswer      string                  `json:"correct_answer"`
+	CorrectCount       int                     `json:"correct_count"`
+	CorrectPercentage  float64                 `json:"correct_percentage"`
 	IsAcceptingAnswers *bool                   `json:"is_accepting_answers,omitempty"`
-	UpdatedAt         time.Time                `json:"updated_at"`
+	UpdatedAt          time.Time               `json:"updated_at"`
 }
 
 // OptionResult represents result for each option
@@ -174,12 +174,12 @@ type OverallRankingResponse struct {
 
 // QuizRankingResponse represents quiz-specific ranking response
 type QuizRankingResponse struct {
-	QuizID              int64                    `json:"quiz_id"`
-	QuestionText        string                   `json:"question_text"`
-	CorrectParticipants []CorrectParticipant     `json:"correct_participants"`
-	TotalCorrect        int                      `json:"total_correct"`
-	TotalAnswers        int                      `json:"total_answers"`
-	CorrectPercentage   float64                  `json:"correct_percentage"`
+	QuizID              int64                `json:"quiz_id"`
+	QuestionText        string               `json:"question_text"`
+	CorrectParticipants []CorrectParticipant `json:"correct_participants"`
+	TotalCorrect        int                  `json:"total_correct"`
+	TotalAnswers        int                  `json:"total_answers"`
+	CorrectPercentage   float64              `json:"correct_percentage"`
 }
 
 // CorrectParticipant represents a participant who answered correctly
@@ -205,11 +205,11 @@ type ParticipantRankingResponse struct {
 
 // ParticipantAnswersResponse represents participant answers history response
 type ParticipantAnswersResponse struct {
-	ParticipantID  int64                    `json:"participant_id"`
-	Answers        []ParticipantAnswer      `json:"answers"`
-	TotalAnswers   int                      `json:"total_answers"`
-	CorrectAnswers int                      `json:"correct_answers"`
-	AccuracyRate   float64                  `json:"accuracy_rate"`
+	ParticipantID  int64               `json:"participant_id"`
+	Answers        []ParticipantAnswer `json:"answers"`
+	TotalAnswers   int                 `json:"total_answers"`
+	CorrectAnswers int                 `json:"correct_answers"`
+	AccuracyRate   float64             `json:"accuracy_rate"`
 }
 
 // ParticipantAnswer represents a single answer in participant's history

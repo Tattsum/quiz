@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gin-gonic/gin"
 	"github.com/Tattsum/quiz/internal/models"
+	"github.com/gin-gonic/gin"
 )
 
 // UploadImage handles image file upload
@@ -82,7 +82,7 @@ func UploadImage(c *gin.Context) {
 	}
 
 	contentType := http.DetectContentType(buffer)
-	
+
 	// Check if content type is allowed
 	allowed := false
 	for _, allowedType := range allowedTypes {
@@ -96,8 +96,8 @@ func UploadImage(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, models.APIResponse{
 			Success: false,
 			Error: &models.APIError{
-				Code:    "INVALID_FILE_TYPE",
-				Message: fmt.Sprintf("File type %s is not allowed. Allowed types: %s", 
+				Code: "INVALID_FILE_TYPE",
+				Message: fmt.Sprintf("File type %s is not allowed. Allowed types: %s",
 					contentType, strings.Join(allowedTypes, ", ")),
 			},
 		})
@@ -122,7 +122,7 @@ func UploadImage(c *gin.Context) {
 	}
 
 	filename := fmt.Sprintf("quiz_image_%s_%d%s", timestamp, time.Now().UnixNano(), ext)
-	
+
 	// Ensure upload directory exists
 	uploadDir := "uploads/images"
 	if err := os.MkdirAll(uploadDir, 0755); err != nil {
@@ -172,16 +172,16 @@ func getBaseURL(c *gin.Context) string {
 	if c.Request.TLS != nil {
 		scheme = "https"
 	}
-	
+
 	// Check for forwarded protocol header (for reverse proxies)
 	if proto := c.GetHeader("X-Forwarded-Proto"); proto != "" {
 		scheme = proto
 	}
-	
+
 	host := c.Request.Host
 	if host == "" {
 		host = "localhost:8080"
 	}
-	
+
 	return fmt.Sprintf("%s://%s", scheme, host)
 }

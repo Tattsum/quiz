@@ -5,9 +5,9 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/gin-gonic/gin"
 	"github.com/Tattsum/quiz/internal/database"
 	"github.com/Tattsum/quiz/internal/models"
+	"github.com/gin-gonic/gin"
 )
 
 // RegisterParticipant registers a new participant
