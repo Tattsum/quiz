@@ -15,7 +15,7 @@ import (
 
 const (
 	// MaxConnections is the maximum number of concurrent WebSocket connections allowed
-	MaxConnections = 70 // 最大接続数
+	MaxConnections = 150 // 最大接続数 - Increased for performance testing
 )
 
 var (

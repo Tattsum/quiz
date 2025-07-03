@@ -73,17 +73,17 @@ func RateLimit() gin.HandlerFunc {
 
 		switch {
 		case strings.HasPrefix(c.Request.URL.Path, "/api/admin"):
-			// Admin endpoints: 100 requests per minute
-			limiter = getLimiter(clientIP+":admin", rate.Every(time.Minute/100), 100)
+			// Admin endpoints: 500 requests per minute (increased for performance testing)
+			limiter = getLimiter(clientIP+":admin", rate.Every(time.Minute/500), 500)
 		case strings.HasPrefix(c.Request.URL.Path, "/api/auth"):
-			// Auth endpoints: 5 requests per minute (stricter for login)
-			limiter = getLimiter(clientIP+":auth", rate.Every(time.Minute/5), 5)
+			// Auth endpoints: 20 requests per minute (increased for performance testing)
+			limiter = getLimiter(clientIP+":auth", rate.Every(time.Minute/20), 20)
 		case strings.HasPrefix(c.Request.URL.Path, "/api/answers"):
-			// Answer endpoints: 60 requests per minute
-			limiter = getLimiter(clientIP+":answers", rate.Every(time.Second), 60)
+			// Answer endpoints: 300 requests per minute (increased for performance testing)
+			limiter = getLimiter(clientIP+":answers", rate.Every(time.Second/5), 300)
 		default:
-			// Default: 100 requests per minute
-			limiter = getLimiter(clientIP+":default", rate.Every(time.Minute/100), 100)
+			// Default: 500 requests per minute (increased for performance testing)
+			limiter = getLimiter(clientIP+":default", rate.Every(time.Minute/500), 500)
 		}
 
 		if !limiter.Allow() {

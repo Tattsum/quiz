@@ -348,7 +348,7 @@ func TestConcurrentWebSocketConnections(t *testing.T) {
 		for i, conn := range connections {
 			subscribeMsg := map[string]interface{}{
 				"type":    "subscribe",
-				"quiz_id": 1,
+				"quiz_id": 2,
 			}
 
 			messagesSent++
@@ -444,7 +444,7 @@ func TestConcurrentAnswerSubmissions(t *testing.T) {
 
 			answerReq := models.AnswerRequest{
 				ParticipantID:  pID,
-				QuizID:         1,
+				QuizID:         2,
 				SelectedOption: []string{"A", "B", "C", "D"}[userNum%4],
 			}
 
@@ -611,11 +611,11 @@ func TestSystemLoadUnder70Users(t *testing.T) {
 
 					// 3. 複数回の回答送信（時間内で）
 					for time.Since(userStartTime) < duration/2 {
-						answerReq := models.AnswerRequest{
-							ParticipantID:  participantID,
-							QuizID:         1,
-							SelectedOption: []string{"A", "B", "C", "D"}[userNum%4],
-						}
+									answerReq := models.AnswerRequest{
+				ParticipantID:  participantID,
+				QuizID:         2,
+				SelectedOption: []string{"A", "B", "C", "D"}[userNum%4],
+			}
 
 						jsonData, _ := json.Marshal(answerReq)
 						reqStart := time.Now()
