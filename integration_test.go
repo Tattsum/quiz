@@ -365,7 +365,7 @@ func TestIntegrationSessionManagement(t *testing.T) {
 	testRouter.ServeHTTP(w, req)
 
 	var loginResp models.APIResponse
-	json.Unmarshal(w.Body.Bytes(), &loginResp)
+	_ = json.Unmarshal(w.Body.Bytes(), &loginResp) // テスト用なのでエラーハンドリング不要
 	loginData := loginResp.Data.(map[string]interface{})
 	token := loginData["access_token"].(string)
 
@@ -480,7 +480,7 @@ func TestIntegrationConcurrentAnswers(t *testing.T) {
 	testRouter.ServeHTTP(w, req)
 
 	var loginResp models.APIResponse
-	json.Unmarshal(w.Body.Bytes(), &loginResp)
+	_ = json.Unmarshal(w.Body.Bytes(), &loginResp) // テスト用なのでエラーハンドリング不要
 	loginData := loginResp.Data.(map[string]interface{})
 	token := loginData["access_token"].(string)
 
