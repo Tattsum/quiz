@@ -3,7 +3,7 @@
 
 -- 管理者テストデータ
 INSERT INTO administrators (id, username, password_hash, email) VALUES
-(1, 'admin', '$2a$10$N9qo8uLOickgx2ZMRZoMye/wIFTEzcXEMOB/.aOD/l7w4dQNhF.EW', 'admin@example.com');
+(1, 'admin', '$2a$10$1iUcDcN76V09xV2EHF8xyuL9m.soCXbkd7ip6U9DbfAkXQbyW6Ktm', 'admin@example.com');
 
 -- 参加者テストデータ
 INSERT INTO participants (id, nickname) VALUES

@@ -50,14 +50,90 @@ build/
 
 # Go specific
 quiz-server
+quiz
 /uploads/*
 !/uploads/.gitkeep
+# Go test binaries
+*.test
+# Go benchmark files
+*.bench
+# Go profiling files
+*.prof
+*.cpu
+*.mem
+# Go workspace files
+*.work
+*.work.sum
 
-# Test coverage
+# Test coverage and results
 coverage/
 *.cover
 .nyc_output
+# Test results directory
+test-results/
+# Coverage HTML reports
+coverage.html
+coverage.out
+coverage.txt
+
+# Frontend specific
+# Next.js
+.next/
+.swc/
+next-env.d.ts
+*.tsbuildinfo
+out/
+
+# Nuxt3
+.nuxt/
+.nitro/
+.output/
+.data/
+.cache/
+
+# Vue.js
+.vuepress/dist/
 
 # Temporary files
 tmp/
 temp/
+*.tmp
+*.temp
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+# Database dumps
+*.sql.gz
+*.dump
+
+# Security files
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+
+# IDE specific
+*.iml
+.project
+.classpath
+.settings/
+.metadata
+
+# Backup files
+*~
+*.bak
+*.backup
+*.orig
+
+# Archive files
+*.zip
+*.tar.gz
+*.rar
+*.7z
+
+# Development tools
+.eslintcache
+.prettierignore
