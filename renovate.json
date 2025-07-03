@@ -1,0 +1,98 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:base"
+  ],
+  "schedule": [
+    "before 6am on Monday"
+  ],
+  "timezone": "Asia/Tokyo",
+  "assigneesFromCodeOwners": true,
+  "reviewersFromCodeOwners": true,
+  "prConcurrentLimit": 3,
+  "lockFileMaintenance": {
+    "enabled": true,
+    "schedule": ["before 6am on Monday"]
+  },
+  "packageRules": [
+    {
+      "matchManagers": ["gomod"],
+      "groupName": "Go dependencies",
+      "schedule": ["before 6am on Monday"],
+      "automerge": false,
+      "reviewersFromCodeOwners": true
+    },
+    {
+      "matchManagers": ["npm"],
+      "matchPaths": ["admin-dashboard/**"],
+      "groupName": "Nuxt3 Admin Dashboard dependencies",
+      "schedule": ["before 6am on Monday"],
+      "automerge": false,
+      "reviewersFromCodeOwners": true
+    },
+    {
+      "matchManagers": ["npm"],
+      "matchPaths": ["participant-app/**"],
+      "groupName": "Next.js Participant App dependencies",
+      "schedule": ["before 6am on Monday"],
+      "automerge": false,
+      "reviewersFromCodeOwners": true
+    },
+    {
+      "matchDepTypes": ["devDependencies"],
+      "groupName": "Dev dependencies",
+      "schedule": ["before 6am on Monday"],
+      "automerge": false
+    },
+    {
+      "matchUpdateTypes": ["patch"],
+      "automerge": true,
+      "automergeType": "pr",
+      "platformAutomerge": true
+    },
+    {
+      "matchUpdateTypes": ["minor"],
+      "groupName": "Minor updates",
+      "schedule": ["before 6am on Monday"]
+    },
+    {
+      "matchUpdateTypes": ["major"],
+      "groupName": "Major updates",
+      "schedule": ["before 6am on first day of month"],
+      "dependencyDashboard": true
+    }
+  ],
+  "vulnerabilityAlerts": {
+    "enabled": true,
+    "schedule": ["at any time"]
+  },
+  "dependencyDashboard": true,
+  "dependencyDashboardTitle": "Dependency Dashboard",
+  "dependencyDashboardApproval": false,
+  "labels": ["dependencies", "renovate"],
+  "commitMessagePrefix": "chore(deps):",
+  "prTitle": "{{commitMessagePrefix}} {{commitMessageAction}} {{commitMessageTopic}} {{commitMessageExtra}}",
+  "prBodyTemplate": [
+    "This PR contains the following updates:",
+    "",
+    "| Package | Change | Age | Adoption | Passing | Confidence |",
+    "|---------|--------|-----|----------|---------|------------|",
+    "{{#each upgrades as |upgrade|}}",
+    "| {{upgrade.depName}} | {{#if upgrade.displayFrom}}{{upgrade.displayFrom}} → {{upgrade.displayTo}}{{else}}{{upgrade.newValue}}{{/if}} | [![age](https://badges.renovateapi.com/packages/{{upgrade.datasource}}/{{replace '/' '%2f' upgrade.depName}}/{{upgrade.newVersion}}/age-slim)](https://docs.renovatebot.com/merge-confidence/) | [![adoption](https://badges.renovateapi.com/packages/{{upgrade.datasource}}/{{replace '/' '%2f' upgrade.depName}}/{{upgrade.newVersion}}/adoption-slim)](https://docs.renovatebot.com/merge-confidence/) | [![passing](https://badges.renovateapi.com/packages/{{upgrade.datasource}}/{{replace '/' '%2f' upgrade.depName}}/{{upgrade.newVersion}}/compatibility-slim/{{upgrade.currentVersion}})](https://docs.renovatebot.com/merge-confidence/) | [![confidence](https://badges.renovateapi.com/packages/{{upgrade.datasource}}/{{replace '/' '%2f' upgrade.depName}}/{{upgrade.newVersion}}/confidence-slim/{{upgrade.currentVersion}})](https://docs.renovatebot.com/merge-confidence/) |",
+    "{{/each}}",
+    "",
+    "---",
+    "",
+    "### Configuration",
+    "",
+    "📅 **Schedule**: {{schedule}}",
+    "",
+    "🚦 **Automerge**: {{automerge}}",
+    "",
+    "♻ **Rebasing**: {{rebaseWhen}}",
+    "",
+    "🔕 **Ignore**: Close this PR and you won't be reminded about {{#if (containsString updateType 'major')}}these{{else}}this{{/if}} update{{#unless (eq (len upgrades) 1)}}s{{/unless}} again.",
+    "",
+    "---"
+  ]
+}
