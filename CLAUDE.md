@@ -52,3 +52,9 @@ make test      # テスト実行
 ```
 make install-tools  # gofumptとgolangci-lintをインストール
 ```
+
+## Git運用ルール
+
+- 作業毎に必ずcommitする（まとめてcommitしない）
+- 各タスク完了時に個別にcommitを実行する
+- すべての作業完了後にプルリクエスト（PR）を作成する
