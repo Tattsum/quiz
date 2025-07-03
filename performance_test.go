@@ -66,13 +66,13 @@ func setupPerformanceTest(t *testing.T) {
 	t.Log("サーバーのヘルスチェックを実行中...")
 	resp, err := http.Get(BaseURL + "/api/session/status")
 	if err != nil || resp == nil {
-		t.Fatalf("サーバーが起動していません。以下を確認してください:\n" + 
-			"1. サーバーが %s で起動していること\n" + 
-			"2. データベースが起動していること\n" + 
+		t.Fatalf("サーバーが起動していません。以下を確認してください:\n"+
+			"1. サーバーが %s で起動していること\n"+
+			"2. データベースが起動していること\n"+
 			"エラー: %v", BaseURL, err)
 	}
 	defer resp.Body.Close()
-	
+
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("サーバーのヘルスチェックに失敗しました: HTTP status %d", resp.StatusCode)
 	}
@@ -114,7 +114,7 @@ func setupPerformanceTest(t *testing.T) {
 // テスト後のクリーンアップを行う
 func cleanupPerformanceTest(t *testing.T) {
 	t.Log("パフォーマンステストのクリーンアップを実行中...")
-	
+
 	// WebSocket接続の最終確認（サーバーが正常に動作していることを確認）
 	wsConn, _, err := websocket.DefaultDialer.Dial(WebSocketURL, nil)
 	if err != nil {
@@ -139,7 +139,7 @@ func cleanupPerformanceTest(t *testing.T) {
 
 	// パフォーマンステストでは、次回実行のために基本データは残す
 	// テスト用参加者データの大量削除は行わない（パフォーマンスに影響するため）
-	
+
 	t.Log("✅ パフォーマンステストのクリーンアップが完了しました")
 }
 
