@@ -247,6 +247,8 @@ func GetParticipantAnswers(c *gin.Context) {
 }
 
 // SubmitAnswer handles answer submission
+//
+//nolint:gocyclo
 func SubmitAnswer(c *gin.Context) {
 	var req models.AnswerRequest
 	if err := c.ShouldBindJSON(&req); err != nil {

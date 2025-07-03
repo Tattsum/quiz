@@ -1,8 +1,10 @@
 package services
 
 import (
+	"os"
 	"testing"
 
+	"github.com/Tattsum/quiz/internal/database"
 	"github.com/Tattsum/quiz/internal/models"
 )
 
@@ -75,6 +77,23 @@ func TestQuizService_validateQuizRequest(t *testing.T) {
 }
 
 func TestQuizService_GetQuizByID(t *testing.T) {
+	// テスト環境設定
+	if os.Getenv("TEST_ENV") != "true" {
+		// Set default test database configuration
+		_ = os.Setenv("DB_HOST", "localhost")
+		_ = os.Setenv("DB_PORT", "5433")
+		_ = os.Setenv("DB_USER", "quiz_user")
+		_ = os.Setenv("DB_PASSWORD", "quiz_password")
+		_ = os.Setenv("DB_NAME", "quiz_db_test")
+		_ = os.Setenv("DB_SSLMODE", "disable")
+	}
+
+	// データベース接続を初期化
+	_, err := database.Initialize()
+	if err != nil {
+		t.Skipf("Database connection failed: %v", err)
+	}
+
 	service := NewQuizService()
 
 	tests := []struct {

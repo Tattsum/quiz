@@ -197,7 +197,7 @@ func createTestImageFileHeader(filename, contentType string, imageData []byte) *
 	// Create a temporary file for testing
 	tmpFile, _ := os.CreateTemp("", filename)
 	defer os.Remove(tmpFile.Name())
-	tmpFile.Write(imageData)
+	_, _ = tmpFile.Write(imageData) // テスト用なのでエラーハンドリング不要
 	tmpFile.Close()
 
 	return &multipart.FileHeader{
@@ -233,7 +233,7 @@ func createTestJPEGImage() []byte {
 	img := image.NewRGBA(image.Rect(0, 0, 100, 100))
 
 	var buf bytes.Buffer
-	jpeg.Encode(&buf, img, &jpeg.Options{Quality: 80})
+	_ = jpeg.Encode(&buf, img, &jpeg.Options{Quality: 80}) // テスト用なのでエラーハンドリング不要
 	return buf.Bytes()
 }
 
@@ -241,7 +241,6 @@ func createLargeTestJPEGImage() []byte {
 	img := image.NewRGBA(image.Rect(0, 0, 2500, 2000))
 
 	var buf bytes.Buffer
-	jpeg.Encode(&buf, img, &jpeg.Options{Quality: 80})
+	_ = jpeg.Encode(&buf, img, &jpeg.Options{Quality: 80}) // テスト用なのでエラーハンドリング不要
 	return buf.Bytes()
 }
-

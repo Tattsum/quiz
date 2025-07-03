@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 
 	"github.com/Tattsum/quiz/internal/database"
@@ -15,10 +16,15 @@ import (
 func TestGetQuizzes(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
+	// テスト環境用のデータベース設定
+	setupTestEnv()
+
 	// データベース接続を初期化
 	_, err := database.Initialize()
-	if err != nil {
-		t.Skipf("Database connection failed: %v", err)
+	if err != nil && os.Getenv("TEST_ENV") != testEnvValue {
+		t.Skipf("Database connection failed (not in test environment): %v", err)
+	} else if err != nil {
+		t.Fatalf("Database connection failed in test environment: %v", err)
 	}
 
 	tests := []struct {
@@ -52,7 +58,7 @@ func TestGetQuizzes(t *testing.T) {
 			GetQuizzes(c)
 
 			if w.Code != tt.expectedStatus {
-				t.Errorf("Expected status %d, got %d", tt.expectedStatus, w.Code)
+				t.Errorf("Expected status %d, got %d. Response body: %s", tt.expectedStatus, w.Code, w.Body.String())
 			}
 
 			var response models.APIResponse
@@ -71,10 +77,15 @@ func TestGetQuizzes(t *testing.T) {
 func TestGetQuiz(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
+	// テスト環境用のデータベース設定
+	setupTestEnv()
+
 	// データベース接続を初期化
 	_, err := database.Initialize()
-	if err != nil {
-		t.Skipf("Database connection failed: %v", err)
+	if err != nil && os.Getenv("TEST_ENV") != testEnvValue {
+		t.Skipf("Database connection failed (not in test environment): %v", err)
+	} else if err != nil {
+		t.Fatalf("Database connection failed in test environment: %v", err)
 	}
 
 	tests := []struct {
@@ -111,7 +122,7 @@ func TestGetQuiz(t *testing.T) {
 			GetQuiz(c)
 
 			if w.Code != tt.expectedStatus {
-				t.Errorf("Expected status %d, got %d", tt.expectedStatus, w.Code)
+				t.Errorf("Expected status %d, got %d. Response body: %s", tt.expectedStatus, w.Code, w.Body.String())
 			}
 		})
 	}
@@ -120,10 +131,15 @@ func TestGetQuiz(t *testing.T) {
 func TestCreateQuiz(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
+	// テスト環境用のデータベース設定
+	setupTestEnv()
+
 	// データベース接続を初期化
 	_, err := database.Initialize()
-	if err != nil {
-		t.Skipf("Database connection failed: %v", err)
+	if err != nil && os.Getenv("TEST_ENV") != testEnvValue {
+		t.Skipf("Database connection failed (not in test environment): %v", err)
+	} else if err != nil {
+		t.Fatalf("Database connection failed in test environment: %v", err)
 	}
 
 	tests := []struct {
@@ -180,7 +196,7 @@ func TestCreateQuiz(t *testing.T) {
 			CreateQuiz(c)
 
 			if w.Code != tt.expectedStatus {
-				t.Errorf("Expected status %d, got %d", tt.expectedStatus, w.Code)
+				t.Errorf("Expected status %d, got %d. Response body: %s", tt.expectedStatus, w.Code, w.Body.String())
 			}
 		})
 	}
@@ -189,10 +205,15 @@ func TestCreateQuiz(t *testing.T) {
 func TestUpdateQuiz(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
+	// テスト環境用のデータベース設定
+	setupTestEnv()
+
 	// データベース接続を初期化
 	_, err := database.Initialize()
-	if err != nil {
-		t.Skipf("Database connection failed: %v", err)
+	if err != nil && os.Getenv("TEST_ENV") != testEnvValue {
+		t.Skipf("Database connection failed (not in test environment): %v", err)
+	} else if err != nil {
+		t.Fatalf("Database connection failed in test environment: %v", err)
 	}
 
 	tests := []struct {
@@ -258,7 +279,7 @@ func TestUpdateQuiz(t *testing.T) {
 			UpdateQuiz(c)
 
 			if w.Code != tt.expectedStatus {
-				t.Errorf("Expected status %d, got %d", tt.expectedStatus, w.Code)
+				t.Errorf("Expected status %d, got %d. Response body: %s", tt.expectedStatus, w.Code, w.Body.String())
 			}
 		})
 	}
@@ -267,10 +288,15 @@ func TestUpdateQuiz(t *testing.T) {
 func TestDeleteQuiz(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
+	// テスト環境用のデータベース設定
+	setupTestEnv()
+
 	// データベース接続を初期化
 	_, err := database.Initialize()
-	if err != nil {
-		t.Skipf("Database connection failed: %v", err)
+	if err != nil && os.Getenv("TEST_ENV") != testEnvValue {
+		t.Skipf("Database connection failed (not in test environment): %v", err)
+	} else if err != nil {
+		t.Fatalf("Database connection failed in test environment: %v", err)
 	}
 
 	tests := []struct {
@@ -307,7 +333,7 @@ func TestDeleteQuiz(t *testing.T) {
 			DeleteQuiz(c)
 
 			if w.Code != tt.expectedStatus {
-				t.Errorf("Expected status %d, got %d", tt.expectedStatus, w.Code)
+				t.Errorf("Expected status %d, got %d. Response body: %s", tt.expectedStatus, w.Code, w.Body.String())
 			}
 		})
 	}

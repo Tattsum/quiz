@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 
 	"github.com/Tattsum/quiz/internal/database"
@@ -15,10 +16,15 @@ import (
 func TestRegisterParticipant(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
+	// テスト環境用のデータベース設定
+	setupTestEnv()
+
 	// データベース接続を初期化
 	_, err := database.Initialize()
-	if err != nil {
-		t.Skipf("Database connection failed: %v", err)
+	if err != nil && os.Getenv("TEST_ENV") != testEnvValue {
+		t.Skipf("Database connection failed (not in test environment): %v", err)
+	} else if err != nil {
+		t.Fatalf("Database connection failed in test environment: %v", err)
 	}
 
 	tests := []struct {
@@ -77,7 +83,7 @@ func TestRegisterParticipant(t *testing.T) {
 			RegisterParticipant(c)
 
 			if w.Code != tt.expectedStatus {
-				t.Errorf("Expected status %d, got %d", tt.expectedStatus, w.Code)
+				t.Errorf("Expected status %d, got %d. Response body: %s", tt.expectedStatus, w.Code, w.Body.String())
 			}
 		})
 	}
@@ -86,10 +92,15 @@ func TestRegisterParticipant(t *testing.T) {
 func TestGetParticipant(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
+	// テスト環境用のデータベース設定
+	setupTestEnv()
+
 	// データベース接続を初期化
 	_, err := database.Initialize()
-	if err != nil {
-		t.Skipf("Database connection failed: %v", err)
+	if err != nil && os.Getenv("TEST_ENV") != testEnvValue {
+		t.Skipf("Database connection failed (not in test environment): %v", err)
+	} else if err != nil {
+		t.Fatalf("Database connection failed in test environment: %v", err)
 	}
 
 	tests := []struct {
@@ -126,7 +137,7 @@ func TestGetParticipant(t *testing.T) {
 			GetParticipant(c)
 
 			if w.Code != tt.expectedStatus {
-				t.Errorf("Expected status %d, got %d", tt.expectedStatus, w.Code)
+				t.Errorf("Expected status %d, got %d. Response body: %s", tt.expectedStatus, w.Code, w.Body.String())
 			}
 		})
 	}
@@ -135,10 +146,15 @@ func TestGetParticipant(t *testing.T) {
 func TestGetParticipantAnswers(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
+	// テスト環境用のデータベース設定
+	setupTestEnv()
+
 	// データベース接続を初期化
 	_, err := database.Initialize()
-	if err != nil {
-		t.Skipf("Database connection failed: %v", err)
+	if err != nil && os.Getenv("TEST_ENV") != testEnvValue {
+		t.Skipf("Database connection failed (not in test environment): %v", err)
+	} else if err != nil {
+		t.Fatalf("Database connection failed in test environment: %v", err)
 	}
 
 	tests := []struct {
@@ -175,7 +191,7 @@ func TestGetParticipantAnswers(t *testing.T) {
 			GetParticipantAnswers(c)
 
 			if w.Code != tt.expectedStatus {
-				t.Errorf("Expected status %d, got %d", tt.expectedStatus, w.Code)
+				t.Errorf("Expected status %d, got %d. Response body: %s", tt.expectedStatus, w.Code, w.Body.String())
 			}
 		})
 	}
@@ -184,10 +200,15 @@ func TestGetParticipantAnswers(t *testing.T) {
 func TestSubmitAnswer(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
+	// テスト環境用のデータベース設定
+	setupTestEnv()
+
 	// データベース接続を初期化
 	_, err := database.Initialize()
-	if err != nil {
-		t.Skipf("Database connection failed: %v", err)
+	if err != nil && os.Getenv("TEST_ENV") != testEnvValue {
+		t.Skipf("Database connection failed (not in test environment): %v", err)
+	} else if err != nil {
+		t.Fatalf("Database connection failed in test environment: %v", err)
 	}
 
 	tests := []struct {
@@ -198,8 +219,8 @@ func TestSubmitAnswer(t *testing.T) {
 		{
 			name: "Submit answer with valid data",
 			requestBody: models.AnswerRequest{
-				ParticipantID:  1,
-				QuizID:         1,
+				ParticipantID:  3,  // 未使用の参加者IDを使用
+				QuizID:         3,  // 未使用のクイズIDを使用
 				SelectedOption: "A",
 			},
 			expectedStatus: http.StatusCreated,
@@ -251,7 +272,7 @@ func TestSubmitAnswer(t *testing.T) {
 			SubmitAnswer(c)
 
 			if w.Code != tt.expectedStatus {
-				t.Errorf("Expected status %d, got %d", tt.expectedStatus, w.Code)
+				t.Errorf("Expected status %d, got %d. Response body: %s", tt.expectedStatus, w.Code, w.Body.String())
 			}
 		})
 	}
@@ -260,10 +281,15 @@ func TestSubmitAnswer(t *testing.T) {
 func TestUpdateAnswer(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
+	// テスト環境用のデータベース設定
+	setupTestEnv()
+
 	// データベース接続を初期化
 	_, err := database.Initialize()
-	if err != nil {
-		t.Skipf("Database connection failed: %v", err)
+	if err != nil && os.Getenv("TEST_ENV") != testEnvValue {
+		t.Skipf("Database connection failed (not in test environment): %v", err)
+	} else if err != nil {
+		t.Fatalf("Database connection failed in test environment: %v", err)
 	}
 
 	tests := []struct {
@@ -327,7 +353,7 @@ func TestUpdateAnswer(t *testing.T) {
 			UpdateAnswer(c)
 
 			if w.Code != tt.expectedStatus {
-				t.Errorf("Expected status %d, got %d", tt.expectedStatus, w.Code)
+				t.Errorf("Expected status %d, got %d. Response body: %s", tt.expectedStatus, w.Code, w.Body.String())
 			}
 		})
 	}

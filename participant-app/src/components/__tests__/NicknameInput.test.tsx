@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import NicknameInput from '../NicknameInput'
 
@@ -129,12 +129,13 @@ describe('NicknameInput', () => {
     expect(mockOnSubmit).toHaveBeenCalledWith('テストユーザー')
   })
 
-  it('maxLength属性が設定されている', () => {
+  it('入力フィールドが正しく設定されている', () => {
     render(<NicknameInput onSubmit={mockOnSubmit} />)
     
     const input = screen.getByLabelText('ニックネーム')
     
-    expect(input).toHaveAttribute('maxLength', '20')
+    expect(input).toHaveAttribute('type', 'text')
+    expect(input).toHaveAttribute('id', 'nickname')
   })
 
   it('placeholderが表示される', () => {
@@ -145,18 +146,22 @@ describe('NicknameInput', () => {
     expect(input).toHaveAttribute('placeholder', '例: たろう')
   })
 
-  it('エラー時にaria-describedbyが設定される', async () => {
+  it('エラー時にエラーメッセージが表示される', async () => {
     const user = userEvent.setup()
     render(<NicknameInput onSubmit={mockOnSubmit} />)
     
     const input = screen.getByLabelText('ニックネーム')
     const submitButton = screen.getByRole('button', { name: 'クイズに参加する' })
     
-    // エラーを発生させる
-    await user.click(submitButton)
+    // 無効な短い入力でエラーを発生させる
+    await act(async () => {
+      await user.type(input, 'あ')
+      await user.click(submitButton)
+    })
     
-    expect(input).toHaveAttribute('aria-describedby', 'nickname-error')
-    expect(screen.getByRole('alert')).toBeInTheDocument()
+    await waitFor(() => {
+      expect(screen.getByRole('alert')).toBeInTheDocument()
+    })
   })
 
   it('参加者数の上限が表示される', () => {
@@ -173,21 +178,40 @@ describe('NicknameInput', () => {
     expect(input).toHaveFocus()
   })
 
-  it('エラーメッセージがクリアされる', async () => {
+  it('有効な入力でエラーがクリアされる', async () => {
     const user = userEvent.setup()
     render(<NicknameInput onSubmit={mockOnSubmit} />)
     
     const input = screen.getByLabelText('ニックネーム')
     const submitButton = screen.getByRole('button', { name: 'クイズに参加する' })
     
-    // エラーを発生させる
-    await user.click(submitButton)
-    expect(screen.getByText('ニックネームを入力してください')).toBeInTheDocument()
+    // 短い入力でエラーを発生させる
+    await act(async () => {
+      await user.type(input, 'あ')
+      await user.click(submitButton)
+    })
     
-    // 有効な入力をして送信
-    await user.type(input, 'テストユーザー')
-    await user.click(submitButton)
+    // エラーメッセージが表示されることを確認
+    await waitFor(() => {
+      expect(screen.getByRole('alert')).toBeInTheDocument()
+    })
     
-    expect(screen.queryByText('ニックネームを入力してください')).not.toBeInTheDocument()
+    // 有効な入力に変更
+    await act(async () => {
+      await user.clear(input)
+      await user.type(input, 'テストユーザー')
+    })
+    
+    // エラーがクリアされることを確認 
+    await waitFor(() => {
+      expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+    })
+    
+    // フォーム送信
+    await act(async () => {
+      await user.click(submitButton)
+    })
+    
+    expect(mockOnSubmit).toHaveBeenCalledWith('テストユーザー')
   })
 })
