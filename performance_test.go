@@ -142,11 +142,99 @@ func setupPerformanceTest(t *testing.T) {
 		t.Fatalf("テスト用参加者登録に失敗しました: HTTP status %d", testResp.StatusCode)
 	}
 
+	// 4. 管理者ログインと認証トークン取得
+	t.Log("管理者認証中...")
+	loginReq := models.LoginRequest{
+		Username: "admin",
+		Password: "password",
+	}
+	loginData, _ := json.Marshal(loginReq)
+	loginResp, err := client.Post(
+		BaseURL+"/api/auth/login",
+		"application/json",
+		bytes.NewBuffer(loginData),
+	)
+	if err != nil || loginResp == nil {
+		t.Fatalf("管理者ログインに失敗しました: %v", err)
+	}
+	defer loginResp.Body.Close()
+
+	if loginResp.StatusCode != http.StatusOK {
+		t.Fatalf("管理者認証に失敗しました: HTTP status %d", loginResp.StatusCode)
+	}
+
+	var loginResult map[string]interface{}
+	if err := json.NewDecoder(loginResp.Body).Decode(&loginResult); err != nil {
+		t.Fatalf("ログインレスポンスの解析に失敗しました: %v", err)
+	}
+
+	loginResultData, ok := loginResult["data"].(map[string]interface{})
+	if !ok {
+		t.Fatal("ログインレスポンスのデータ形式が不正です")
+	}
+	token, ok := loginResultData["access_token"].(string)
+	if !ok {
+		t.Fatal("アクセストークンの取得に失敗しました")
+	}
+
+	// 5. テスト用クイズID 2の存在確認と作成
+	t.Log("テスト用クイズの準備中...")
+	req, _ := http.NewRequest("GET", BaseURL+"/api/admin/quizzes/2", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	quizResp, err := client.Do(req)
+	
+	if err != nil || quizResp.StatusCode != http.StatusOK {
+		// クイズID 2が存在しない場合は作成
+		t.Log("テスト用クイズを作成中...")
+		quizReq := models.QuizRequest{
+			QuestionText:  "パフォーマンステスト用問題",
+			OptionA:       "選択肢A",
+			OptionB:       "選択肢B", 
+			OptionC:       "選択肢C",
+			OptionD:       "選択肢D",
+			CorrectAnswer: "A",
+		}
+		quizData, _ := json.Marshal(quizReq)
+		req, _ := http.NewRequest("POST", BaseURL+"/api/admin/quizzes", bytes.NewBuffer(quizData))
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Authorization", "Bearer "+token)
+		
+		createResp, err := client.Do(req)
+		if err != nil || createResp == nil || createResp.StatusCode != http.StatusCreated {
+			t.Fatalf("テスト用クイズの作成に失敗しました: %v", err)
+		}
+		createResp.Body.Close()
+	} else {
+		quizResp.Body.Close()
+	}
+
+	// 6. セッション開始
+	t.Log("パフォーマンステスト用セッションを開始中...")
+	sessionReq := models.SessionStartRequest{
+		QuizID: 2,
+	}
+	sessionData, _ := json.Marshal(sessionReq)
+	req, _ = http.NewRequest("POST", BaseURL+"/api/admin/session/start", bytes.NewBuffer(sessionData))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+token)
+
+	sessionResp, err := client.Do(req)
+	if err != nil || sessionResp == nil {
+		t.Fatalf("セッション開始に失敗しました: %v", err)
+	}
+	defer sessionResp.Body.Close()
+
+	if sessionResp.StatusCode != http.StatusOK {
+		t.Fatalf("セッション開始に失敗しました: HTTP status %d", sessionResp.StatusCode)
+	}
+
 	t.Log("✅ パフォーマンステスト環境のセットアップが完了しました")
 	t.Logf("  - API Base URL: %s", BaseURL)
 	t.Logf("  - WebSocket URL: %s", WebSocketURL)
 	t.Logf("  - 最大同時ユーザー数: %d", getMaxConcurrentUsers())
 	t.Logf("  - テスト継続時間: %v", getTestDuration())
+	t.Logf("  - テスト用クイズID: 2")
+	t.Logf("  - セッション状態: アクティブ（回答受付中）")
 }
 
 // テスト後のクリーンアップを行う
