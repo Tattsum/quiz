@@ -47,39 +47,36 @@ func main() {
 		auth.POST("/refresh", handlers.RefreshToken)
 	}
 
-	// 管理者認証エンドポイント
-	adminAuth := v1.Group("/admin")
+	// 管理者エンドポイント（認証が必要）
+	admin := v1.Group("/admin")
+	admin.Use(middleware.JWTAuth(jwtService))
 	{
-		adminAuth.POST("/logout", middleware.JWTAuth(jwtService), handlers.AdminLogout)
-		adminAuth.GET("/verify", middleware.JWTAuth(jwtService), handlers.VerifyToken)
-	}
-
-	// 管理者用問題管理エンドポイント
-	adminQuiz := v1.Group("/admin/quizzes")
-	adminQuiz.Use(middleware.JWTAuth(jwtService))
-	{
-		adminQuiz.GET("", handlers.GetQuizzes)
-		adminQuiz.GET("/:id", handlers.GetQuiz)
-		adminQuiz.POST("", handlers.CreateQuiz)
-		adminQuiz.PUT("/:id", handlers.UpdateQuiz)
-		adminQuiz.DELETE("/:id", handlers.DeleteQuiz)
-	}
-
-	// 管理者用セッション管理エンドポイント
-	adminSession := v1.Group("/admin/session")
-	adminSession.Use(middleware.JWTAuth(jwtService))
-	{
-		adminSession.POST("/start", handlers.StartSession)
-		adminSession.POST("/next", handlers.NextQuestion)
-		adminSession.POST("/toggle-answers", handlers.ToggleAnswers)
-		adminSession.POST("/end", handlers.EndSession)
-	}
-
-	// 管理者用ファイルアップロード
-	adminUpload := v1.Group("/admin/upload")
-	adminUpload.Use(middleware.JWTAuth(jwtService))
-	{
-		adminUpload.POST("/image", handlers.UploadImage)
+		// 認証関連
+		admin.POST("/logout", handlers.AdminLogout)
+		admin.GET("/verify", handlers.VerifyToken)
+		
+		// 問題管理
+		admin.GET("/quizzes", handlers.GetQuizzes)
+		admin.GET("/quizzes/:id", handlers.GetQuiz)
+		admin.POST("/quizzes", handlers.CreateQuiz)
+		admin.PUT("/quizzes/:id", handlers.UpdateQuiz)
+		admin.DELETE("/quizzes/:id", handlers.DeleteQuiz)
+		
+		// セッション管理
+		admin.POST("/session/start", handlers.StartSession)
+		admin.POST("/session/next", handlers.NextQuestion)
+		admin.POST("/session/toggle-answers", handlers.ToggleAnswers)
+		admin.POST("/session/end", handlers.EndSession)
+		
+		// ファイルアップロード
+		admin.POST("/upload/image", handlers.UploadImage)
+		
+		// 結果・ランキング（具体的なパスを先に定義）
+		admin.GET("/results/current", handlers.GetCurrentResults)
+		admin.GET("/ranking/overall", handlers.GetOverallRanking)
+		admin.GET("/results/quiz/:id", handlers.GetQuizResults)
+		admin.GET("/ranking/quiz/:id", handlers.GetQuizRanking)
+		admin.GET("/ranking/participant/:id", handlers.GetParticipantRanking)
 	}
 
 	// セッション状態取得（公開）
