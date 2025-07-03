@@ -19,7 +19,7 @@ jobs:
     - uses: actions/checkout@v4
 
     - name: Set up Go
-      uses: actions/setup-go@v4
+      uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5
       with:
         go-version: ${{ env.GO_VERSION }}
 
@@ -51,7 +51,7 @@ jobs:
     - uses: actions/checkout@v4
 
     - name: Set up Go
-      uses: actions/setup-go@v4
+      uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5
       with:
         go-version: ${{ env.GO_VERSION }}
 
@@ -122,7 +122,7 @@ jobs:
     - uses: actions/checkout@v4
 
     - name: Set up Go
-      uses: actions/setup-go@v4
+      uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5
       with:
         go-version: ${{ env.GO_VERSION }}
 
@@ -160,7 +160,7 @@ jobs:
           --health-retries 5
       
       redis:
-        image: redis:7-alpine
+        image: redis:8-alpine@sha256:48501c5ad00d5563bc30c075c7bcef41d7d98de3e9a1e6c752068c66f0a8463b
         ports:
           - 6379:6379
         options: >-
@@ -177,7 +177,7 @@ jobs:
     - uses: actions/checkout@v4
 
     - name: Set up Go
-      uses: actions/setup-go@v4
+      uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5
       with:
         go-version: ${{ env.GO_VERSION }}
 
@@ -273,7 +273,7 @@ jobs:
           --health-retries 5
       
       redis:
-        image: redis:7-alpine
+        image: redis:8-alpine@sha256:48501c5ad00d5563bc30c075c7bcef41d7d98de3e9a1e6c752068c66f0a8463b
         ports:
           - 6379:6379
         options: >-
@@ -286,7 +286,7 @@ jobs:
     - uses: actions/checkout@v4
 
     - name: Set up Go
-      uses: actions/setup-go@v4
+      uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5
       with:
         go-version: ${{ env.GO_VERSION }}
 
@@ -353,7 +353,7 @@ jobs:
           --health-retries 5
       
       redis:
-        image: redis:7-alpine
+        image: redis:8-alpine@sha256:48501c5ad00d5563bc30c075c7bcef41d7d98de3e9a1e6c752068c66f0a8463b
         ports:
           - 6379:6379
         options: >-
@@ -366,7 +366,7 @@ jobs:
     - uses: actions/checkout@v4
 
     - name: Set up Go
-      uses: actions/setup-go@v4
+      uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5
       with:
         go-version: ${{ env.GO_VERSION }}
 
@@ -476,7 +476,7 @@ jobs:
     - uses: actions/checkout@v4
 
     - name: Set up Go
-      uses: actions/setup-go@v4
+      uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5
       with:
         go-version: ${{ env.GO_VERSION }}
 
@@ -627,7 +627,7 @@ jobs:
           --health-retries 5
       
       redis:
-        image: redis:7-alpine
+        image: redis:8-alpine@sha256:48501c5ad00d5563bc30c075c7bcef41d7d98de3e9a1e6c752068c66f0a8463b
         ports:
           - 6379:6379
         options: >-
@@ -640,7 +640,7 @@ jobs:
     - uses: actions/checkout@v4
 
     - name: Set up Go
-      uses: actions/setup-go@v4
+      uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5
       with:
         go-version: ${{ env.GO_VERSION }}
 

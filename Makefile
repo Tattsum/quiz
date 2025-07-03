@@ -5,7 +5,7 @@ GO_VERSION=$(shell go version | awk '{print $$3}')
 PARALLELISM ?= 8
 
 # Tool versions (managed by Renovate)
-GOLANGCI_LINT_VERSION := v1.64.1
+GOLANGCI_LINT_VERSION := v2.1.6
 GOFUMPT_VERSION := v0.8.0
 
 help: ## Show this help message
