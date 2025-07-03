@@ -12,8 +12,8 @@
     "test:record": "cypress run --record"
   },
   "devDependencies": {
-    "cypress": "^13.6.4",
-    "@cypress/webpack-preprocessor": "^6.0.1",
-    "typescript": "^5.3.3"
+    "cypress": "13.17.0",
+    "@cypress/webpack-preprocessor": "6.0.4",
+    "typescript": "5.8.3"
   }
 }
