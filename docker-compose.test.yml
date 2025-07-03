@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database for Testing
+  postgres-test:
+    image: postgres:15
+    container_name: quiz_postgres_test
+    environment:
+      POSTGRES_DB: quiz_db_test
+      POSTGRES_USER: quiz_user
+      POSTGRES_PASSWORD: quiz_password
+      POSTGRES_HOST_AUTH_METHOD: trust
+    ports:
+      - "5433:5432"
+    volumes:
+      - ./database_schema.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - quiz_test_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U quiz_user -d quiz_db_test"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    tmpfs:
+      - /var/lib/postgresql/data
+
+  # Redis for Testing
+  redis-test:
+    image: redis:7-alpine
+    container_name: quiz_redis_test
+    ports:
+      - "6380:6379"
+    networks:
+      - quiz_test_network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 2s
+      retries: 3
+    tmpfs:
+      - /data
+
+networks:
+  quiz_test_network:
+    driver: bridge
