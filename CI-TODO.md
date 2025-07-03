@@ -59,17 +59,22 @@
 
 # 2. CI実行ログ確認項目
 - [x] Go lint通過確認 (gocyclo設定調整により通過)
-- [x] Go test実行確認 (テストスキップ問題を解決、CI環境で実行)
+- [x] Go test実行確認 (PostgreSQL接続ユーザー名修正で解決)
 - [x] Go coverage 30%以上確認 (30.7%達成)
 - [x] Nuxt3 test通過確認 (Node.js 20アップグレードで解決)
-- [x] Next.js test実行確認 (Jest設定修正で改善)
+- [x] Next.js test実行確認 (React Testing Library修正で全16テスト成功)
 - [x] 統合テスト設定確認
 
 # 3. 実施した対処
 - Node.js 18→20アップグレード（Nuxt3互換性対応）
 - gocyclo複雑度制限 15→20に調整（パフォーマンステスト対応）
-- Jest設定修正：moduleNameMapping→moduleNameMapper
+- PostgreSQL健康チェック修正: pg_isready → pg_isready -U quiz_user
+- Next.js NicknameInputテスト修正: act()ラッピングとエラー状態テスト改善
 - テスト環境変数設定の改善
+
+# 4. 最終CI実行状況
+- 修正後のCI実行でPostgreSQL接続エラーとNext.jsテスト失敗を解決
+- 全ての主要コンポーネント（Go, Nuxt3, Next.js）のテストが成功
 ```
 
 #### CI-006: PRマージ時のCI動作確認
