@@ -3,7 +3,7 @@ version: '3.8'
 services:
   # PostgreSQL Database for Testing (Optimized)
   postgres-test:
-    image: postgres:15-alpine
+    image: postgres:15-alpine@sha256:2985f77749c75e90d340b8538dbf55d4e5b2c5396b2f05b7add61a7d8cd50a99
     container_name: quiz_postgres_test
     environment:
       POSTGRES_DB: quiz_db_test
@@ -49,7 +49,7 @@ services:
 
   # Redis for Testing (Optimized)
   redis-test:
-    image: redis:7-alpine
+    image: redis:7-alpine@sha256:ee9e8748ace004102a267f7b8265dab2c618317df22507b89d16a8add7154273
     container_name: quiz_redis_test
     ports:
       - "6380:6379"
