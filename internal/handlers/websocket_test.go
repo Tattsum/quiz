@@ -6,12 +6,25 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Tattsum/quiz/internal/database"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 )
 
 func TestWebSocketConnection(t *testing.T) {
 	gin.SetMode(gin.TestMode)
+
+	// テスト環境用のデータベース設定
+	setupTestEnv()
+
+	// データベース接続を初期化
+	_, err := database.Initialize()
+	if err != nil {
+		t.Skipf("Database connection failed: %v", err)
+	}
+	defer func() {
+		_ = database.Close()
+	}()
 
 	// テスト用サーバーを作成
 	r := gin.New()
@@ -38,6 +51,18 @@ func TestWebSocketConnection(t *testing.T) {
 
 func TestWebSocketSubscribe(t *testing.T) {
 	gin.SetMode(gin.TestMode)
+
+	// テスト環境用のデータベース設定
+	setupTestEnv()
+
+	// データベース接続を初期化
+	_, err := database.Initialize()
+	if err != nil {
+		t.Skipf("Database connection failed: %v", err)
+	}
+	defer func() {
+		_ = database.Close()
+	}()
 
 	r := gin.New()
 	r.GET("/ws", WebSocketResults)
@@ -80,6 +105,18 @@ func TestWebSocketSubscribe(t *testing.T) {
 func TestWebSocketHeartbeat(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
+	// テスト環境用のデータベース設定
+	setupTestEnv()
+
+	// データベース接続を初期化
+	_, err := database.Initialize()
+	if err != nil {
+		t.Skipf("Database connection failed: %v", err)
+	}
+	defer func() {
+		_ = database.Close()
+	}()
+
 	r := gin.New()
 	r.GET("/ws", WebSocketResults)
 
@@ -116,6 +153,18 @@ func TestWebSocketHeartbeat(t *testing.T) {
 
 func TestWebSocketUnsubscribe(t *testing.T) {
 	gin.SetMode(gin.TestMode)
+
+	// テスト環境用のデータベース設定
+	setupTestEnv()
+
+	// データベース接続を初期化
+	_, err := database.Initialize()
+	if err != nil {
+		t.Skipf("Database connection failed: %v", err)
+	}
+	defer func() {
+		_ = database.Close()
+	}()
 
 	r := gin.New()
 	r.GET("/ws", WebSocketResults)
@@ -165,6 +214,18 @@ func TestWebSocketUnsubscribe(t *testing.T) {
 func TestWebSocketConnectionLimit(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
+	// テスト環境用のデータベース設定
+	setupTestEnv()
+
+	// データベース接続を初期化
+	_, err := database.Initialize()
+	if err != nil {
+		t.Skipf("Database connection failed: %v", err)
+	}
+	defer func() {
+		_ = database.Close()
+	}()
+
 	r := gin.New()
 	r.GET("/ws", WebSocketResults)
 
@@ -200,6 +261,18 @@ func TestWebSocketConnectionLimit(t *testing.T) {
 
 func TestWebSocketInvalidMessage(t *testing.T) {
 	gin.SetMode(gin.TestMode)
+
+	// テスト環境用のデータベース設定
+	setupTestEnv()
+
+	// データベース接続を初期化
+	_, err := database.Initialize()
+	if err != nil {
+		t.Skipf("Database connection failed: %v", err)
+	}
+	defer func() {
+		_ = database.Close()
+	}()
 
 	r := gin.New()
 	r.GET("/ws", WebSocketResults)
@@ -306,6 +379,18 @@ func TestGetSubscriptionCount(t *testing.T) {
 
 func TestWebSocketConcurrentConnections(t *testing.T) {
 	gin.SetMode(gin.TestMode)
+
+	// テスト環境用のデータベース設定
+	setupTestEnv()
+
+	// データベース接続を初期化
+	_, err := database.Initialize()
+	if err != nil {
+		t.Skipf("Database connection failed: %v", err)
+	}
+	defer func() {
+		_ = database.Close()
+	}()
 
 	r := gin.New()
 	r.GET("/ws", WebSocketResults)
