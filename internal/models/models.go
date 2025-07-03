@@ -259,3 +259,25 @@ type UploadResponse struct {
 	Filename string `json:"filename"`
 	Size     int64  `json:"size"`
 }
+
+// ImageUpload represents uploaded image metadata
+type ImageUpload struct {
+	ID           int64     `json:"id" db:"id"`
+	OriginalName string    `json:"original_name" db:"original_name"`
+	Filename     string    `json:"filename" db:"filename"`
+	Path         string    `json:"path" db:"path"`
+	URL          string    `json:"url" db:"url"`
+	ContentType  string    `json:"content_type" db:"content_type"`
+	Size         int64     `json:"size" db:"size"`
+	Width        int       `json:"width" db:"width"`
+	Height       int       `json:"height" db:"height"`
+	CreatedAt    time.Time `json:"created_at" db:"created_at"`
+}
+
+// ImageUploadRequest represents image upload request validation
+type ImageUploadRequest struct {
+	MaxFileSize   int64    `json:"max_file_size" default:"5242880"`
+	AllowedTypes  []string `json:"allowed_types" default:"[\"image/jpeg\",\"image/png\",\"image/gif\"]"`
+	MaxWidth      int      `json:"max_width" default:"1920"`
+	ResizeQuality int      `json:"resize_quality" default:"80"`
+}
