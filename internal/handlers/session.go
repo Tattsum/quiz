@@ -327,7 +327,7 @@ func ToggleAnswers(c *gin.Context) {
 		message = "回答受付を停止しました"
 		// Broadcast voting end when answers are stopped
 		var currentQuizID *int64
-		db.QueryRow("SELECT current_quiz_id FROM quiz_sessions ORDER BY id DESC LIMIT 1").Scan(&currentQuizID)
+		_ = db.QueryRow("SELECT current_quiz_id FROM quiz_sessions ORDER BY id DESC LIMIT 1").Scan(&currentQuizID)
 		if currentQuizID != nil {
 			BroadcastVotingEnd(*currentQuizID, *currentQuizID)
 		}

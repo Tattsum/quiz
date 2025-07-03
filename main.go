@@ -1,9 +1,11 @@
+// Package main provides the entry point for the quiz application server.
 package main
 
 import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/Tattsum/quiz/internal/database"
 	"github.com/Tattsum/quiz/internal/handlers"
@@ -17,7 +19,11 @@ func main() {
 	if err != nil {
 		log.Fatal("Failed to initialize database:", err)
 	}
-	defer db.Close()
+	defer func() {
+		if err := db.Close(); err != nil {
+			log.Printf("Failed to close database connection: %v", err)
+		}
+	}()
 
 	// Ginルーターの設定
 	router := gin.Default()
@@ -111,8 +117,16 @@ func main() {
 		port = "8080"
 	}
 
+	server := &http.Server{
+		Addr:         ":" + port,
+		Handler:      router,
+		ReadTimeout:  15 * time.Second,
+		WriteTimeout: 15 * time.Second,
+		IdleTimeout:  60 * time.Second,
+	}
+
 	log.Printf("Server starting on port %s", port)
-	if err := http.ListenAndServe(":"+port, router); err != nil {
+	if err := server.ListenAndServe(); err != nil {
 		log.Fatal("Failed to start server:", err)
 	}
 }

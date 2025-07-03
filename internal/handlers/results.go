@@ -129,7 +129,11 @@ func getQuizResultsData(db *sql.DB, quizID int64, isAcceptingAnswers *bool) (*mo
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() {
+		if err := rows.Close(); err != nil {
+			// Log error but don't return as we're already handling a response
+		}
+	}()
 
 	optionCounts := make(map[string]int)
 	totalAnswers := 0
@@ -232,7 +236,11 @@ func GetOverallRanking(c *gin.Context) {
 		})
 		return
 	}
-	defer rows.Close()
+	defer func() {
+		if err := rows.Close(); err != nil {
+			// Log error but don't return as we're already handling a response
+		}
+	}()
 
 	var ranking []models.RankingEntry
 	rank := offset + 1
@@ -334,7 +342,11 @@ func GetQuizRanking(c *gin.Context) {
 		})
 		return
 	}
-	defer rows.Close()
+	defer func() {
+		if err := rows.Close(); err != nil {
+			// Log error but don't return as we're already handling a response
+		}
+	}()
 
 	var correctParticipants []models.CorrectParticipant
 	for rows.Next() {

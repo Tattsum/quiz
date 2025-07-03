@@ -1,3 +1,4 @@
+// Package database provides database connection and initialization functionality.
 package database
 
 import (
@@ -7,9 +8,10 @@ import (
 	"os"
 
 	"github.com/joho/godotenv"
-	_ "github.com/lib/pq"
+	_ "github.com/lib/pq" // PostgreSQL driver
 )
 
+// DB is the global database connection instance
 var DB *sql.DB
 
 // Initialize initializes the database connection

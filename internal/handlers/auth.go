@@ -1,3 +1,4 @@
+// Package handlers provides HTTP handlers for the quiz application API endpoints.
 package handlers
 
 import (
