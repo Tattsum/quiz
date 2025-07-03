@@ -1,3 +1,19 @@
+// Package main provides performance tests for the quiz application.
+//
+// パフォーマンステスト実行前の要件:
+// 1. サーバーがポート8080で起動していること
+// 2. PostgreSQLデータベースが起動していること
+// 3. テスト用環境変数が設定されていること
+//
+// 実行方法:
+//
+//	RUN_PERFORMANCE_TESTS=true go test -v -run TestConcurrent -timeout 15m ./performance_test.go
+//
+// テスト内容:
+// - 70人同時参加者登録テスト
+// - 70人同時WebSocket接続テスト
+// - 70人同時回答送信テスト
+// - システム全体負荷テスト
 package main
 
 import (
@@ -44,10 +60,96 @@ type RequestResult struct {
 	Timestamp time.Time
 }
 
+// テスト前のセットアップを行う
+func setupPerformanceTest(t *testing.T) {
+	// 1. サーバーが起動していることを確認
+	t.Log("サーバーのヘルスチェックを実行中...")
+	resp, err := http.Get(BaseURL + "/api/session/status")
+	if err != nil || resp == nil {
+		t.Fatalf("サーバーが起動していません。以下を確認してください:\n" + 
+			"1. サーバーが %s で起動していること\n" + 
+			"2. データベースが起動していること\n" + 
+			"エラー: %v", BaseURL, err)
+	}
+	defer resp.Body.Close()
+	
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("サーバーのヘルスチェックに失敗しました: HTTP status %d", resp.StatusCode)
+	}
+
+	// 2. WebSocketエンドポイントの確認
+	t.Log("WebSocketエンドポイントの確認中...")
+	wsConn, _, err := websocket.DefaultDialer.Dial(WebSocketURL, nil)
+	if err != nil {
+		t.Fatalf("WebSocket接続に失敗しました: %v", err)
+	}
+	wsConn.Close()
+
+	// 3. データベース接続の間接的確認（参加者登録テスト）
+	t.Log("データベース接続の確認中...")
+	testParticipant := models.ParticipantRequest{
+		Nickname: "HealthCheckUser",
+	}
+	jsonData, _ := json.Marshal(testParticipant)
+	testResp, err := http.Post(
+		BaseURL+"/api/participants/register",
+		"application/json",
+		bytes.NewBuffer(jsonData),
+	)
+	if err != nil || testResp == nil {
+		t.Fatalf("データベース接続確認に失敗しました: %v", err)
+	}
+	defer testResp.Body.Close()
+
+	if testResp.StatusCode != http.StatusCreated {
+		t.Fatalf("テスト用参加者登録に失敗しました: HTTP status %d", testResp.StatusCode)
+	}
+
+	t.Log("✅ パフォーマンステスト環境のセットアップが完了しました")
+	t.Logf("  - API Base URL: %s", BaseURL)
+	t.Logf("  - WebSocket URL: %s", WebSocketURL)
+	t.Logf("  - 最大同時ユーザー数: %d", MaxConcurrentUsers)
+}
+
+// テスト後のクリーンアップを行う
+func cleanupPerformanceTest(t *testing.T) {
+	t.Log("パフォーマンステストのクリーンアップを実行中...")
+	
+	// WebSocket接続の最終確認（サーバーが正常に動作していることを確認）
+	wsConn, _, err := websocket.DefaultDialer.Dial(WebSocketURL, nil)
+	if err != nil {
+		t.Logf("警告: クリーンアップ時のWebSocket接続に失敗: %v", err)
+	} else {
+		wsConn.Close()
+		t.Log("  - WebSocket接続が正常に動作しています")
+	}
+
+	// サーバーの最終ヘルスチェック
+	resp, err := http.Get(BaseURL + "/api/session/status")
+	if err != nil {
+		t.Logf("警告: クリーンアップ時のサーバーヘルスチェックに失敗: %v", err)
+	} else {
+		resp.Body.Close()
+		if resp.StatusCode == http.StatusOK {
+			t.Log("  - サーバーが正常に動作しています")
+		} else {
+			t.Logf("警告: サーバーのレスポンスが異常です: status %d", resp.StatusCode)
+		}
+	}
+
+	// パフォーマンステストでは、次回実行のために基本データは残す
+	// テスト用参加者データの大量削除は行わない（パフォーマンスに影響するため）
+	
+	t.Log("✅ パフォーマンステストのクリーンアップが完了しました")
+}
+
 func TestConcurrentParticipantRegistration(t *testing.T) {
 	if testing.Short() && os.Getenv("RUN_PERFORMANCE_TESTS") != runPerfTestsEnv {
 		t.Skip("Skipping performance test in short mode")
 	}
+
+	setupPerformanceTest(t)
+	defer cleanupPerformanceTest(t)
 
 	numParticipants := MaxConcurrentUsers
 	results := make(chan RequestResult, numParticipants)
@@ -167,6 +269,9 @@ func TestConcurrentWebSocketConnections(t *testing.T) {
 		t.Skip("Skipping performance test in short mode")
 	}
 
+	setupPerformanceTest(t)
+	defer cleanupPerformanceTest(t)
+
 	numConnections := MaxConcurrentUsers
 	connections := make([]*websocket.Conn, 0, numConnections)
 	var wg sync.WaitGroup
@@ -280,6 +385,9 @@ func TestConcurrentAnswerSubmissions(t *testing.T) {
 	if testing.Short() && os.Getenv("RUN_PERFORMANCE_TESTS") != runPerfTestsEnv {
 		t.Skip("Skipping performance test in short mode")
 	}
+
+	setupPerformanceTest(t)
+	defer cleanupPerformanceTest(t)
 
 	numParticipants := MaxConcurrentUsers
 	var participantIDs []int64
@@ -432,6 +540,9 @@ func TestSystemLoadUnder70Users(t *testing.T) {
 		t.Skip("Skipping performance test in short mode")
 	}
 
+	setupPerformanceTest(t)
+	defer cleanupPerformanceTest(t)
+
 	t.Log("=== System Load Test Under 70 Concurrent Users ===")
 
 	// システム全体の負荷テスト
@@ -506,7 +617,7 @@ func TestSystemLoadUnder70Users(t *testing.T) {
 
 						jsonData, _ := json.Marshal(answerReq)
 						reqStart := time.Now()
-						resp, err := http.Post(BaseURL+"/api/public/answers", "application/json", bytes.NewBuffer(jsonData))
+						resp, err := http.Post(BaseURL+"/api/answers", "application/json", bytes.NewBuffer(jsonData))
 
 						results <- RequestResult{
 							Success:   err == nil && resp != nil && (resp.StatusCode == http.StatusCreated || resp.StatusCode == http.StatusOK),
@@ -527,7 +638,7 @@ func TestSystemLoadUnder70Users(t *testing.T) {
 			// 4. データ取得リクエスト
 			for time.Since(userStartTime) < duration {
 				reqStart := time.Now()
-				resp, err := http.Get(BaseURL + "/api/public/session/status")
+				resp, err := http.Get(BaseURL + "/api/session/status")
 
 				results <- RequestResult{
 					Success:   err == nil && resp != nil && resp.StatusCode == http.StatusOK,
