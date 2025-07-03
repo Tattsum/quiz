@@ -5,55 +5,43 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/Tattsum/quiz/internal/services"
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
-	jwt "github.com/golang-jwt/jwt/v5"
+	"golang.org/x/time/rate"
 )
-
-// JWTClaims represents JWT token claims
-type JWTClaims struct {
-	AdminID  int64  `json:"admin_id"`
-	Username string `json:"username"`
-	jwt.RegisteredClaims
-}
 
 var (
-	jwtSecret      []byte
 	tokenBlacklist = make(map[string]bool)
 	blacklistMutex sync.RWMutex
+	rateLimiters   = make(map[string]*rate.Limiter)
+	limiterMutex   sync.Mutex
 )
 
-func init() {
-	secret := os.Getenv("JWT_SECRET")
-	if secret == "" {
-		secret = "default-secret-key-change-in-production"
-	}
-	jwtSecret = []byte(secret)
-}
-
-// CORS middleware
+// CORS middleware using gin-contrib/cors
 func CORS() gin.HandlerFunc {
-	allowedOrigins := getEnv("CORS_ALLOWED_ORIGINS", "*")
-	allowedMethods := getEnv("CORS_ALLOWED_METHODS", "GET,POST,PUT,DELETE,OPTIONS")
-	allowedHeaders := getEnv("CORS_ALLOWED_HEADERS", "Origin,Content-Type,Accept,Authorization")
+	config := cors.DefaultConfig()
 
-	return gin.HandlerFunc(func(c *gin.Context) {
-		c.Header("Access-Control-Allow-Origin", allowedOrigins)
-		c.Header("Access-Control-Allow-Credentials", "true")
-		c.Header("Access-Control-Allow-Headers", allowedHeaders)
-		c.Header("Access-Control-Allow-Methods", allowedMethods)
-
-		if c.Request.Method == "OPTIONS" {
-			c.AbortWithStatus(204)
-			return
+	if origins := os.Getenv("CORS_ALLOWED_ORIGINS"); origins != "" {
+		if origins == "*" {
+			config.AllowAllOrigins = true
+		} else {
+			config.AllowOrigins = strings.Split(origins, ",")
 		}
+	} else {
+		config.AllowAllOrigins = true
+	}
 
-		c.Next()
-	})
+	config.AllowMethods = []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}
+	config.AllowHeaders = []string{"Origin", "Content-Type", "Accept", "Authorization", "X-Requested-With"}
+	config.AllowCredentials = true
+	config.MaxAge = 12 * time.Hour
+
+	return cors.New(config)
 }
 
 // Logger middleware
@@ -73,41 +61,29 @@ func Logger() gin.HandlerFunc {
 	})
 }
 
-// RateLimit middleware (simplified implementation)
+// RateLimit middleware using token bucket algorithm
 func RateLimit() gin.HandlerFunc {
-	// In production, use Redis or similar for distributed rate limiting
-	rateLimitMap := make(map[string][]time.Time)
-	rateLimitMutex := sync.RWMutex{}
-
 	return gin.HandlerFunc(func(c *gin.Context) {
 		clientIP := c.ClientIP()
-		now := time.Now()
 
 		// Determine rate limit based on endpoint
-		limit := 100 // default: 100 requests per minute
+		var limiter *rate.Limiter
+
 		if strings.HasPrefix(c.Request.URL.Path, "/api/admin") {
-			limit = 1000 // admin endpoints: 1000 requests per minute
+			// Admin endpoints: 100 requests per minute
+			limiter = getLimiter(clientIP+":admin", rate.Every(time.Minute/100), 100)
+		} else if strings.HasPrefix(c.Request.URL.Path, "/api/auth") {
+			// Auth endpoints: 5 requests per minute (stricter for login)
+			limiter = getLimiter(clientIP+":auth", rate.Every(time.Minute/5), 5)
 		} else if strings.HasPrefix(c.Request.URL.Path, "/api/answers") {
-			limit = 60 // answer endpoints: 60 requests per minute
+			// Answer endpoints: 60 requests per minute
+			limiter = getLimiter(clientIP+":answers", rate.Every(time.Second), 60)
+		} else {
+			// Default: 100 requests per minute
+			limiter = getLimiter(clientIP+":default", rate.Every(time.Minute/100), 100)
 		}
 
-		rateLimitMutex.Lock()
-		defer rateLimitMutex.Unlock()
-
-		// Clean old requests (older than 1 minute)
-		if requests, exists := rateLimitMap[clientIP]; exists {
-			var validRequests []time.Time
-			cutoff := now.Add(-time.Minute)
-			for _, reqTime := range requests {
-				if reqTime.After(cutoff) {
-					validRequests = append(validRequests, reqTime)
-				}
-			}
-			rateLimitMap[clientIP] = validRequests
-		}
-
-		// Check if rate limit exceeded
-		if len(rateLimitMap[clientIP]) >= limit {
+		if !limiter.Allow() {
 			c.JSON(http.StatusTooManyRequests, gin.H{
 				"success": false,
 				"error": gin.H{
@@ -119,14 +95,40 @@ func RateLimit() gin.HandlerFunc {
 			return
 		}
 
-		// Add current request
-		rateLimitMap[clientIP] = append(rateLimitMap[clientIP], now)
 		c.Next()
 	})
 }
 
+// getLimiter returns a rate limiter for the given key
+func getLimiter(key string, r rate.Limit, b int) *rate.Limiter {
+	limiterMutex.Lock()
+	defer limiterMutex.Unlock()
+
+	if limiter, exists := rateLimiters[key]; exists {
+		return limiter
+	}
+
+	limiter := rate.NewLimiter(r, b)
+	rateLimiters[key] = limiter
+
+	// Clean up old limiters periodically (simple cleanup)
+	if len(rateLimiters) > 10000 {
+		// Remove half of the limiters
+		count := 0
+		for k := range rateLimiters {
+			if count > 5000 {
+				break
+			}
+			delete(rateLimiters, k)
+			count++
+		}
+	}
+
+	return limiter
+}
+
 // JWTAuth middleware for admin authentication
-func JWTAuth() gin.HandlerFunc {
+func JWTAuth(jwtService *services.JWTService) gin.HandlerFunc {
 	return gin.HandlerFunc(func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
@@ -141,9 +143,8 @@ func JWTAuth() gin.HandlerFunc {
 			return
 		}
 
-		// Extract token from "Bearer <token>"
-		tokenParts := strings.Split(authHeader, " ")
-		if len(tokenParts) != 2 || tokenParts[0] != "Bearer" {
+		tokenString := jwtService.ExtractTokenFromHeader(authHeader)
+		if tokenString == "" {
 			c.JSON(http.StatusUnauthorized, gin.H{
 				"success": false,
 				"error": gin.H{
@@ -154,8 +155,6 @@ func JWTAuth() gin.HandlerFunc {
 			c.Abort()
 			return
 		}
-
-		tokenString := tokenParts[1]
 
 		// Check if token is blacklisted
 		blacklistMutex.RLock()
@@ -173,73 +172,48 @@ func JWTAuth() gin.HandlerFunc {
 		}
 		blacklistMutex.RUnlock()
 
-		// Parse and validate token
-		token, err := jwt.ParseWithClaims(tokenString, &JWTClaims{}, func(token *jwt.Token) (interface{}, error) {
-			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-				return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
-			}
-			return jwtSecret, nil
-		})
+		// Validate token using JWT service
+		claims, err := jwtService.ValidateAccessToken(tokenString)
 		if err != nil {
+			var errorCode, errorMessage string
+			switch err {
+			case services.ErrExpiredToken:
+				errorCode = "TOKEN_EXPIRED"
+				errorMessage = "Token has expired"
+			case services.ErrInvalidTokenType:
+				errorCode = "INVALID_TOKEN_TYPE"
+				errorMessage = "Invalid token type"
+			default:
+				errorCode = "INVALID_TOKEN"
+				errorMessage = "Invalid token"
+			}
+
 			c.JSON(http.StatusUnauthorized, gin.H{
 				"success": false,
 				"error": gin.H{
-					"code":    "INVALID_TOKEN",
-					"message": "Invalid token",
+					"code":    errorCode,
+					"message": errorMessage,
 				},
 			})
 			c.Abort()
 			return
 		}
 
-		if claims, ok := token.Claims.(*JWTClaims); ok && token.Valid {
-			// Set user information in context
-			c.Set("admin_id", claims.AdminID)
-			c.Set("username", claims.Username)
-			c.Set("token", tokenString)
-			c.Next()
-		} else {
-			c.JSON(http.StatusUnauthorized, gin.H{
-				"success": false,
-				"error": gin.H{
-					"code":    "INVALID_CLAIMS",
-					"message": "Invalid token claims",
-				},
-			})
-			c.Abort()
-			return
-		}
+		// Set user information in context
+		c.Set("admin_id", claims.AdminID)
+		c.Set("username", claims.Username)
+		c.Set("token", tokenString)
+		c.Next()
 	})
 }
 
-// GenerateJWT generates a new JWT token for admin
-func GenerateJWT(adminID int64, username string) (string, time.Time, error) {
-	expiresHours := 24
-	if hoursStr := os.Getenv("JWT_EXPIRES_HOURS"); hoursStr != "" {
-		if hours, err := strconv.Atoi(hoursStr); err == nil {
-			expiresHours = hours
+// LogoutUser adds a token to the blacklist (logout functionality)
+func LogoutUser(c *gin.Context) {
+	if token, exists := c.Get("token"); exists {
+		if tokenString, ok := token.(string); ok {
+			BlacklistToken(tokenString)
 		}
 	}
-
-	expirationTime := time.Now().Add(time.Duration(expiresHours) * time.Hour)
-
-	claims := &JWTClaims{
-		AdminID:  adminID,
-		Username: username,
-		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(expirationTime),
-			IssuedAt:  jwt.NewNumericDate(time.Now()),
-			Issuer:    "quiz-system",
-		},
-	}
-
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	tokenString, err := token.SignedString(jwtSecret)
-	if err != nil {
-		return "", time.Time{}, err
-	}
-
-	return tokenString, expirationTime, nil
 }
 
 // BlacklistToken adds a token to the blacklist
