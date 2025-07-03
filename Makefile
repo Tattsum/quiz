@@ -3,6 +3,10 @@
 BINARY_NAME=quiz
 GO_VERSION=$(shell go version | awk '{print $$3}')
 
+# Tool versions (managed by Renovate)
+GOLANGCI_LINT_VERSION := v1.64.1
+GOFUMPT_VERSION := v0.8.0
+
 help: ## Show this help message
 	@echo 'Usage:'
 	@echo '  make [target]'
@@ -12,8 +16,8 @@ help: ## Show this help message
 
 install-tools: ## Install development tools
 	@echo "Installing development tools..."
-	@go install mvdan.cc/gofumpt@latest
-	@go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+	@go install mvdan.cc/gofumpt@$(GOFUMPT_VERSION)
+	@go install github.com/golangci/golangci-lint/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION)
 
 fmt: ## Format code with gofumpt
 	@echo "Formatting code with gofumpt..."
