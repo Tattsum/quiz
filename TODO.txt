@@ -12,21 +12,74 @@ Go言語でWebSocketを使用したリアルタイム通信機能を実装
 
 ## TODO一覧
 
-### [未着手] プロジェクト構造調査
-### [未着手] gorilla/websocketの依存関係確認・追加
-### [未着手] WebSocketメッセージ型の定義
-### [未着手] WebSocket接続管理機能の実装
-### [未着手] ブロードキャスト機能の実装
-### [未着手] 問題切り替え通知機能の実装
-### [未着手] 投票終了通知機能の実装
-### [未着手] 回答状況ブロードキャスト機能の実装
-### [未着手] 最大接続数制限（70人）の実装
-### [未着手] エラーハンドリングとログ機能の実装
+### [完了] プロジェクト構造調査
+- DDD設計に従った構造確認
+- internal/handlers/websocket.go が既に存在
+
+### [完了] gorilla/websocketの依存関係確認・追加
+- go.mod に github.com/gorilla/websocket v1.5.3 が既に追加済み
+
+### [完了] WebSocketメッセージ型の定義
+- WebSocketMessage, SubscribeMessage, QuestionSwitchNotification, VotingEndNotification, AnswerStatusUpdate が定義済み
+
+### [完了] WebSocket接続管理機能の実装
+- ClientConnection構造体とconnections mapで管理
+- 最大70人の接続制限実装済み
+- ハートビート機能実装済み
+
+### [完了] ブロードキャスト機能の実装
+- BroadcastResultUpdate, BroadcastSessionUpdate 実装済み
+
+### [完了] 問題切り替え通知機能の実装
+- BroadcastQuestionSwitch 実装済み
+
+### [完了] 投票終了通知機能の実装
+- BroadcastVotingEnd 実装済み
+
+### [完了] 回答状況ブロードキャスト機能の実装
+- BroadcastAnswerStatus 実装済み
+
+### [完了] 最大接続数制限（70人）の実装
+- MaxConnections定数で70に設定済み
+- WebSocketResults関数で接続数チェック実装済み
+
+### [完了] エラーハンドリングとログ機能の実装
+- WebSocket接続エラー、メッセージ送信エラーのハンドリング実装済み
+- CleanupConnections で古い接続の自動削除機能実装済み
 
 ## 成果物
-- 各エンドポイントのパス、メソッド、リクエスト/レスポンス形式の定義
+
+### WebSocket実装済み機能
+- **接続管理**: `/ws` エンドポイントでWebSocket接続
+- **メッセージタイプ**:
+  - `subscribe`: クイズIDを指定してリアルタイム更新を購読
+  - `unsubscribe`: 購読解除
+  - `heartbeat`: 接続維持用ハートビート
+  - `result_update`: リアルタイム結果更新
+  - `session_update`: セッション状態更新
+  - `question_switch`: 問題切り替え通知
+  - `voting_end`: 投票終了通知
+  - `answer_status`: 回答状況リアルタイム更新
+
+### API連携機能
+- `BroadcastQuestionSwitch(quizID, questionNumber, totalQuestions)`: 問題切り替え通知
+- `BroadcastVotingEnd(quizID, questionID)`: 投票終了通知
+- `BroadcastAnswerStatus(quizID, questionID, totalParticipants, answeredCount, answerCounts)`: 回答状況配信
+- `BroadcastResultUpdate(quizID)`: 結果更新配信
+- `GetConnectionCount()`: 現在の接続数取得
+- `GetSubscriptionCount(quizID)`: 特定クイズの購読者数取得
+
+### セキュリティ・パフォーマンス
+- 最大70人同時接続制限
+- 自動接続クリーンアップ（2分間無応答で切断）
+- ハートビート機能による接続監視
+- goroutineによる非同期メッセージ送信
 
 ## 過去の作業履歴
 データベース設計は完了済み:
 - database_schema.sql: データベーススキーマ（CREATE TABLE文）
 - er_diagram.md: ER図（Mermaid記法）
+
+WebSocketリアルタイム通信機能は完了済み:
+- internal/handlers/websocket.go: WebSocket機能実装完了
+- internal/models/models.go: WebSocket関連モデル定義完了
