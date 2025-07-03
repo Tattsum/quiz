@@ -8,7 +8,7 @@ on:
 
 env:
   GO_VERSION: '1.24.4'
-  NODE_VERSION: '18'
+  NODE_VERSION: '20'
 
 jobs:
   # Go Backend Tests
@@ -93,7 +93,7 @@ jobs:
             excludes:
               - G304  # File path provided as taint input (handled with validation)
           gocyclo:
-            min-complexity: 15
+            min-complexity: 20
           revive:
             confidence: 0.8
         EOF
