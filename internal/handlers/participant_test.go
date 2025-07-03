@@ -219,8 +219,8 @@ func TestSubmitAnswer(t *testing.T) {
 		{
 			name: "Submit answer with valid data",
 			requestBody: models.AnswerRequest{
-				ParticipantID:  3,  // 未使用の参加者IDを使用
-				QuizID:         3,  // 未使用のクイズIDを使用
+				ParticipantID:  3, // 未使用の参加者IDを使用
+				QuizID:         3, // 未使用のクイズIDを使用
 				SelectedOption: "A",
 			},
 			expectedStatus: http.StatusCreated,
