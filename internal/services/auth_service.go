@@ -9,7 +9,6 @@ import (
 	"golang.org/x/crypto/bcrypt"
 
 	"github.com/Tattsum/quiz/internal/database"
-	"github.com/Tattsum/quiz/internal/middleware"
 	"github.com/Tattsum/quiz/internal/models"
 )
 
@@ -25,8 +24,8 @@ func NewAuthService() *AuthService {
 	}
 }
 
-// Login authenticates a user and returns a JWT token
-func (s *AuthService) Login(username, password string) (*models.LoginResponse, error) {
+// AuthenticateAdmin authenticates an admin user and returns admin details
+func (s *AuthService) AuthenticateAdmin(username, password string) (*models.Administrator, error) {
 	if username == "" || password == "" {
 		return nil, errors.New("username and password are required")
 	}
@@ -40,18 +39,9 @@ func (s *AuthService) Login(username, password string) (*models.LoginResponse, e
 		return nil, errors.New("invalid credentials")
 	}
 
-	token, expiresAt, err := middleware.GenerateJWT(admin.ID, admin.Username)
-	if err != nil {
-		return nil, fmt.Errorf("failed to generate token: %w", err)
-	}
-
+	// Clear password hash for security
 	admin.PasswordHash = ""
-
-	return &models.LoginResponse{
-		Token:     token,
-		ExpiresAt: expiresAt,
-		Admin:     *admin,
-	}, nil
+	return admin, nil
 }
 
 // GetAdminByID retrieves an administrator by their ID
@@ -99,6 +89,42 @@ func (s *AuthService) getAdminByUsername(username string) (*models.Administrator
 			return nil, errors.New("invalid credentials")
 		}
 		return nil, fmt.Errorf("failed to get admin: %w", err)
+	}
+
+	return &admin, nil
+}
+
+// HashPassword generates a bcrypt hash of the password
+func (s *AuthService) HashPassword(password string) (string, error) {
+	bytes, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	return string(bytes), err
+}
+
+// CreateAdmin creates a new administrator (for initial setup or testing)
+func (s *AuthService) CreateAdmin(username, password, email string) (*models.Administrator, error) {
+	if username == "" || password == "" || email == "" {
+		return nil, errors.New("username, password, and email are required")
+	}
+
+	hashedPassword, err := s.HashPassword(password)
+	if err != nil {
+		return nil, fmt.Errorf("failed to hash password: %w", err)
+	}
+
+	query := `INSERT INTO administrators (username, password_hash, email, created_at, updated_at) 
+			  VALUES ($1, $2, $3, NOW(), NOW()) 
+			  RETURNING id, username, email, created_at, updated_at`
+
+	var admin models.Administrator
+	err = s.db.QueryRow(query, username, hashedPassword, email).Scan(
+		&admin.ID,
+		&admin.Username,
+		&admin.Email,
+		&admin.CreatedAt,
+		&admin.UpdatedAt,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create admin: %w", err)
 	}
 
 	return &admin, nil

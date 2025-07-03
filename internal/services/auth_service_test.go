@@ -4,7 +4,7 @@ import (
 	"testing"
 )
 
-func TestAuthService_Login(t *testing.T) {
+func TestAuthService_AuthenticateAdmin(t *testing.T) {
 	service := NewAuthService()
 
 	tests := []struct {
@@ -41,15 +41,43 @@ func TestAuthService_Login(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := service.Login(tt.username, tt.password)
+			_, err := service.AuthenticateAdmin(tt.username, tt.password)
 			if tt.name == "non-empty credentials" {
 				if err != nil && err.Error() != "invalid credentials" {
-					t.Errorf("Login() unexpected error = %v", err)
+					t.Errorf("AuthenticateAdmin() unexpected error = %v", err)
 				}
 			} else if (err != nil) != tt.wantErr {
-				t.Errorf("Login() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("AuthenticateAdmin() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
+	}
+}
+
+func TestAuthService_HashPassword(t *testing.T) {
+	service := NewAuthService()
+
+	password := "testpassword123"
+	hash, err := service.HashPassword(password)
+	if err != nil {
+		t.Fatalf("HashPassword() failed: %v", err)
+	}
+
+	if hash == "" {
+		t.Error("HashPassword() returned empty hash")
+	}
+
+	if hash == password {
+		t.Error("HashPassword() returned plaintext password")
+	}
+
+	// Test that the same password generates different hashes (due to salt)
+	hash2, err := service.HashPassword(password)
+	if err != nil {
+		t.Fatalf("HashPassword() failed on second call: %v", err)
+	}
+
+	if hash == hash2 {
+		t.Error("HashPassword() should generate different hashes for same password")
 	}
 }
 
