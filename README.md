@@ -70,7 +70,7 @@ npm install
    - `go-vet`: Go静的解析
 
 2. **テスト実行** (並列実行)
-   - `go-unit-tests`: パッケージ別単体テスト (handlers, services, models, database, utils)
+   - `go-unit-tests`: パッケージ別単体テスト (handlers, services, other)
    - `go-integration-tests`: 統合テスト
    - `go-performance-tests`: パフォーマンステスト (70人同時接続)
 

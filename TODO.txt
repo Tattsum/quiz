@@ -199,7 +199,7 @@ WebSocketリアルタイム通信機能は完了済み:
 - **Go品質チェック並列化**: format、lint、vetを独立したジョブで同時実行
 - **テスト並列化**: 単体テスト（packages別）、統合テスト、パフォーマンステスト並列実行
 - **高度なキャッシュ戦略**: Goモジュール、lint、ビルドキャッシュの最適化
-- **マトリックス戦略**: 単体テストをhandlers/services/models/database/utilsに分割
+- **マトリックス戦略**: 単体テストをhandlers/services/other(models,database,middleware,utils)に分割
 - **カバレッジ統合**: 各テストのカバレッジを統合して総合レポート生成
 - **Makefile最適化**: 並列実行対応、CI特化コマンド、パフォーマンス調整可能
 

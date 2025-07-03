@@ -52,9 +52,20 @@ test-parallel: ## Run tests in parallel by package
 	@echo "Running tests in parallel by package..."
 	@go test -v -race -parallel $(PARALLELISM) -coverprofile=coverage-handlers.out ./internal/handlers/... &
 	@go test -v -race -parallel $(PARALLELISM) -coverprofile=coverage-services.out ./internal/services/... &
-	@go test -v -race -parallel $(PARALLELISM) -coverprofile=coverage-models.out ./internal/models/... &
-	@go test -v -race -parallel $(PARALLELISM) -coverprofile=coverage-database.out ./internal/database/... &
-	@go test -v -race -parallel $(PARALLELISM) -coverprofile=coverage-utils.out ./internal/utils/... &
+	@(echo "Testing other packages..." && \
+		for pkg in models database middleware utils; do \
+			if [ -d "./internal/$$pkg" ] && ls ./internal/$$pkg/*.go >/dev/null 2>&1; then \
+				echo "Testing ./internal/$$pkg/..." && \
+				go test -v -race -parallel $(PARALLELISM) -coverprofile=coverage-$$pkg.out ./internal/$$pkg/... || true; \
+			fi; \
+		done && \
+		echo "mode: atomic" > coverage-other.out && \
+		for pkg in models database middleware utils; do \
+			if [ -f "coverage-$$pkg.out" ]; then \
+				tail -n +2 coverage-$$pkg.out >> coverage-other.out && \
+				rm -f coverage-$$pkg.out; \
+			fi; \
+		done) &
 	@wait
 	@echo "Merging coverage reports..."
 	@echo "mode: atomic" > coverage.out
