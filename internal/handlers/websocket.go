@@ -13,6 +13,10 @@ import (
 	"github.com/Tattsum/quiz/internal/models"
 )
 
+const (
+	MaxConnections = 70 // 最大接続数
+)
+
 var (
 	upgrader = websocket.Upgrader{
 		CheckOrigin: func(r *http.Request) bool {
@@ -45,8 +49,46 @@ type SubscribeMessage struct {
 	QuizID int64  `json:"quiz_id"`
 }
 
+// QuestionSwitchNotification represents a question switch notification
+type QuestionSwitchNotification struct {
+	QuizID         int64 `json:"quiz_id"`
+	QuestionNumber int   `json:"question_number"`
+	TotalQuestions int   `json:"total_questions"`
+	SwitchedAt     time.Time `json:"switched_at"`
+}
+
+// VotingEndNotification represents a voting end notification
+type VotingEndNotification struct {
+	QuizID     int64     `json:"quiz_id"`
+	QuestionID int64     `json:"question_id"`
+	EndedAt    time.Time `json:"ended_at"`
+}
+
+// AnswerStatusUpdate represents current answer status
+type AnswerStatusUpdate struct {
+	QuizID          int64              `json:"quiz_id"`
+	QuestionID      int64              `json:"question_id"`
+	TotalParticipants int              `json:"total_participants"`
+	AnsweredCount   int                `json:"answered_count"`
+	AnswerCounts    map[string]int     `json:"answer_counts"`
+	UpdatedAt       time.Time          `json:"updated_at"`
+}
+
 // WebSocketResults handles WebSocket connections for real-time results
 func WebSocketResults(c *gin.Context) {
+	// Check connection limit
+	connectionsMutex.RLock()
+	currentConnections := len(connections)
+	connectionsMutex.RUnlock()
+	
+	if currentConnections >= MaxConnections {
+		c.JSON(http.StatusServiceUnavailable, gin.H{
+			"error": "Maximum connections reached",
+			"max_connections": MaxConnections,
+		})
+		return
+	}
+
 	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
 		log.Printf("WebSocket upgrade failed: %v", err)
@@ -62,12 +104,14 @@ func WebSocketResults(c *gin.Context) {
 	
 	connectionsMutex.Lock()
 	connections[conn] = client
+	log.Printf("New WebSocket connection established. Total connections: %d/%d", len(connections), MaxConnections)
 	connectionsMutex.Unlock()
 
 	// Remove connection when done
 	defer func() {
 		connectionsMutex.Lock()
 		delete(connections, conn)
+		log.Printf("WebSocket connection closed. Total connections: %d/%d", len(connections), MaxConnections)
 		connectionsMutex.Unlock()
 	}()
 
@@ -161,6 +205,74 @@ func BroadcastSessionUpdate(sessionData interface{}) {
 		go func(c *websocket.Conn) {
 			sendMessage(c, "session_update", sessionData)
 		}(conn)
+	}
+}
+
+// BroadcastQuestionSwitch broadcasts question switch notifications
+func BroadcastQuestionSwitch(quizID int64, questionNumber, totalQuestions int) {
+	notification := QuestionSwitchNotification{
+		QuizID:         quizID,
+		QuestionNumber: questionNumber,
+		TotalQuestions: totalQuestions,
+		SwitchedAt:     time.Now(),
+	}
+
+	connectionsMutex.RLock()
+	defer connectionsMutex.RUnlock()
+
+	for conn, client := range connections {
+		if client.QuizID != nil && *client.QuizID == quizID {
+			go func(c *websocket.Conn) {
+				sendMessage(c, "question_switch", notification)
+			}(conn)
+		}
+	}
+	
+	log.Printf("Broadcasted question switch for quiz %d to %d subscribers", quizID, GetSubscriptionCount(quizID))
+}
+
+// BroadcastVotingEnd broadcasts voting end notifications
+func BroadcastVotingEnd(quizID, questionID int64) {
+	notification := VotingEndNotification{
+		QuizID:     quizID,
+		QuestionID: questionID,
+		EndedAt:    time.Now(),
+	}
+
+	connectionsMutex.RLock()
+	defer connectionsMutex.RUnlock()
+
+	for conn, client := range connections {
+		if client.QuizID != nil && *client.QuizID == quizID {
+			go func(c *websocket.Conn) {
+				sendMessage(c, "voting_end", notification)
+			}(conn)
+		}
+	}
+	
+	log.Printf("Broadcasted voting end for quiz %d, question %d to %d subscribers", quizID, questionID, GetSubscriptionCount(quizID))
+}
+
+// BroadcastAnswerStatus broadcasts current answer status
+func BroadcastAnswerStatus(quizID, questionID int64, totalParticipants, answeredCount int, answerCounts map[string]int) {
+	status := AnswerStatusUpdate{
+		QuizID:            quizID,
+		QuestionID:        questionID,
+		TotalParticipants: totalParticipants,
+		AnsweredCount:     answeredCount,
+		AnswerCounts:      answerCounts,
+		UpdatedAt:         time.Now(),
+	}
+
+	connectionsMutex.RLock()
+	defer connectionsMutex.RUnlock()
+
+	for conn, client := range connections {
+		if client.QuizID != nil && *client.QuizID == quizID {
+			go func(c *websocket.Conn) {
+				sendMessage(c, "answer_status", status)
+			}(conn)
+		}
 	}
 }
 

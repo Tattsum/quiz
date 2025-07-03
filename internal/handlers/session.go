@@ -175,6 +175,15 @@ func StartSession(c *gin.Context) {
 
 	currentQuiz := convertQuizToPublic(quiz)
 
+	// Broadcast session start and first question
+	BroadcastQuestionSwitch(quiz.ID, 1, 1)
+	BroadcastSessionUpdate(map[string]interface{}{
+		"session_id":          sessionID,
+		"quiz":                currentQuiz,
+		"is_accepting_answers": true,
+		"status":              "started",
+	})
+
 	c.JSON(http.StatusOK, models.APIResponse{
 		Success: true,
 		Message: "クイズセッションが開始されました",
@@ -262,6 +271,15 @@ func NextQuestion(c *gin.Context) {
 
 	currentQuiz := convertQuizToPublic(quiz)
 
+	// Broadcast question switch (assuming question numbers for now)
+	BroadcastQuestionSwitch(quiz.ID, 1, 1)
+	BroadcastSessionUpdate(map[string]interface{}{
+		"session_id":          sessionID,
+		"quiz":                currentQuiz,
+		"is_accepting_answers": true,
+		"status":              "question_changed",
+	})
+
 	c.JSON(http.StatusOK, models.APIResponse{
 		Success: true,
 		Message: "次の問題に進みました",
@@ -310,7 +328,19 @@ func ToggleAnswers(c *gin.Context) {
 	message := "回答受付を開始しました"
 	if !req.IsAcceptingAnswers {
 		message = "回答受付を停止しました"
+		// Broadcast voting end when answers are stopped
+		var currentQuizID *int64
+		db.QueryRow("SELECT current_quiz_id FROM quiz_sessions ORDER BY id DESC LIMIT 1").Scan(&currentQuizID)
+		if currentQuizID != nil {
+			BroadcastVotingEnd(*currentQuizID, *currentQuizID)
+		}
 	}
+
+	// Broadcast session update
+	BroadcastSessionUpdate(map[string]interface{}{
+		"is_accepting_answers": req.IsAcceptingAnswers,
+		"status":              "answer_acceptance_toggled",
+	})
 
 	c.JSON(http.StatusOK, models.APIResponse{
 		Success: true,
@@ -341,6 +371,13 @@ func EndSession(c *gin.Context) {
 		})
 		return
 	}
+
+	// Broadcast session end
+	BroadcastSessionUpdate(map[string]interface{}{
+		"is_accepting_answers": false,
+		"current_quiz":         nil,
+		"status":               "ended",
+	})
 
 	c.JSON(http.StatusOK, models.APIResponse{
 		Success: true,

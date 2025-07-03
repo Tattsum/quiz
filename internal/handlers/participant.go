@@ -386,6 +386,32 @@ func SubmitAnswer(c *gin.Context) {
 		answer.SelectedOption = req.SelectedOption
 		answer.IsCorrect = isCorrect
 
+		// Broadcast answer status update
+		db := database.GetDB()
+		var totalParticipants, answeredCount int
+		var answerCounts = make(map[string]int)
+
+		// Get total participants
+		db.QueryRow("SELECT COUNT(*) FROM participants").Scan(&totalParticipants)
+
+		// Get answered count for this quiz
+		db.QueryRow("SELECT COUNT(*) FROM answers WHERE quiz_id = $1", req.QuizID).Scan(&answeredCount)
+
+		// Get answer distribution
+		rows, err := db.Query("SELECT selected_option, COUNT(*) FROM answers WHERE quiz_id = $1 GROUP BY selected_option", req.QuizID)
+		if err == nil {
+			defer rows.Close()
+			for rows.Next() {
+				var option string
+				var count int
+				rows.Scan(&option, &count)
+				answerCounts[option] = count
+			}
+		}
+
+		// Broadcast the current answer status
+		BroadcastAnswerStatus(req.QuizID, req.QuizID, totalParticipants, answeredCount, answerCounts)
+
 		c.JSON(http.StatusOK, models.APIResponse{
 			Success: true,
 			Message: "回答が変更されました",
@@ -416,6 +442,32 @@ func SubmitAnswer(c *gin.Context) {
 		answer.QuizID = req.QuizID
 		answer.SelectedOption = req.SelectedOption
 		answer.IsCorrect = isCorrect
+
+		// Broadcast answer status update
+		db := database.GetDB()
+		var totalParticipants, answeredCount int
+		var answerCounts = make(map[string]int)
+
+		// Get total participants
+		db.QueryRow("SELECT COUNT(*) FROM participants").Scan(&totalParticipants)
+
+		// Get answered count for this quiz
+		db.QueryRow("SELECT COUNT(*) FROM answers WHERE quiz_id = $1", req.QuizID).Scan(&answeredCount)
+
+		// Get answer distribution
+		rows, err := db.Query("SELECT selected_option, COUNT(*) FROM answers WHERE quiz_id = $1 GROUP BY selected_option", req.QuizID)
+		if err == nil {
+			defer rows.Close()
+			for rows.Next() {
+				var option string
+				var count int
+				rows.Scan(&option, &count)
+				answerCounts[option] = count
+			}
+		}
+
+		// Broadcast the current answer status
+		BroadcastAnswerStatus(req.QuizID, req.QuizID, totalParticipants, answeredCount, answerCounts)
 
 		c.JSON(http.StatusCreated, models.APIResponse{
 			Success: true,
