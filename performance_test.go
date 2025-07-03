@@ -80,7 +80,7 @@ func TestConcurrentParticipantRegistration(t *testing.T) {
 			}
 
 			resp, err := http.Post(
-				BaseURL+"/api/public/participants",
+				BaseURL+"/api/participants/register",
 				"application/json",
 				bytes.NewBuffer(jsonData),
 			)
@@ -294,7 +294,7 @@ func TestConcurrentAnswerSubmissions(t *testing.T) {
 
 		jsonData, _ := json.Marshal(participantReq)
 		resp, err := http.Post(
-			BaseURL+"/api/public/participants",
+			BaseURL+"/api/participants/register",
 			"application/json",
 			bytes.NewBuffer(jsonData),
 		)
@@ -350,7 +350,7 @@ func TestConcurrentAnswerSubmissions(t *testing.T) {
 			}
 
 			resp, err := http.Post(
-				BaseURL+"/api/public/answers",
+				BaseURL+"/api/answers",
 				"application/json",
 				bytes.NewBuffer(jsonData),
 			)
@@ -460,7 +460,7 @@ func TestSystemLoadUnder70Users(t *testing.T) {
 			jsonData, _ := json.Marshal(participantReq)
 
 			reqStart := time.Now()
-			resp, err := http.Post(BaseURL+"/api/public/participants", "application/json", bytes.NewBuffer(jsonData))
+			resp, err := http.Post(BaseURL+"/api/participants/register", "application/json", bytes.NewBuffer(jsonData))
 
 			results <- RequestResult{
 				Success:   err == nil && resp != nil && resp.StatusCode == http.StatusCreated,

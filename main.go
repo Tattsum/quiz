@@ -113,7 +113,7 @@ func main() {
 	}
 
 	// WebSocketエンドポイント
-	v1.GET("/ws/results", handlers.WebSocketResults)
+	router.GET("/ws", handlers.WebSocketResults)
 
 	// 静的ファイル配信 (アップロードされた画像など)
 	router.Static("/uploads", "./uploads")
