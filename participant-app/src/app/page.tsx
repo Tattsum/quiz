@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import NicknameInput from '@/components/NicknameInput'
 import AnswerScreen from '@/components/AnswerScreen'
@@ -21,7 +21,7 @@ import {
 
 type AppState = 'nickname' | 'waiting' | 'question' | 'voting_ended' | 'result'
 
-export default function HomePage() {
+function HomeContent() {
   const searchParams = useSearchParams()
   const quizId = searchParams.get('quiz') || '1' // デフォルトのクイズID
 
@@ -244,4 +244,14 @@ export default function HomePage() {
     default:
       return <WaitingScreen nickname={participant?.nickname || ''} />
   }
+}
+
+export default function HomePage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">
+      <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+    </div>}>
+      <HomeContent />
+    </Suspense>
+  )
 }
