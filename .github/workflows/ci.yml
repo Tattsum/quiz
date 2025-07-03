@@ -232,9 +232,10 @@ jobs:
             # Merge coverage files from other packages
             echo "mode: atomic" > coverage-${{ matrix.test-group }}.out
             for pkg in models database middleware utils; do
-              if [ -f "coverage-$pkg.out" ]; then
-                tail -n +2 coverage-$pkg.out >> coverage-${{ matrix.test-group }}.out
-                rm -f coverage-$pkg.out
+              if [ -f "coverage-$pkg.out" ] && [ -s "coverage-$pkg.out" ]; then
+                echo "Merging coverage-$pkg.out..."
+                tail -n +2 "coverage-$pkg.out" | grep -v "mode: atomic" >> coverage-${{ matrix.test-group }}.out || true
+                rm -f "coverage-$pkg.out"
               fi
             done
           else
@@ -427,7 +428,13 @@ jobs:
     - name: Merge coverage reports
       run: |
         echo "mode: atomic" > coverage.out
-        tail -n +2 coverage-*.out | grep -v "mode: atomic" >> coverage.out || true
+        # Merge coverage files properly, excluding headers and mode lines
+        for file in coverage-*.out; do
+          if [ -f "$file" ] && [ -s "$file" ]; then
+            echo "Merging $file..."
+            tail -n +2 "$file" | grep -v "mode: atomic" >> coverage.out || true
+          fi
+        done
         
     - name: Generate coverage report
       run: |
