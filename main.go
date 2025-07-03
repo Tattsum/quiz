@@ -10,6 +10,7 @@ import (
 	"github.com/Tattsum/quiz/internal/database"
 	"github.com/Tattsum/quiz/internal/handlers"
 	"github.com/Tattsum/quiz/internal/middleware"
+	"github.com/Tattsum/quiz/internal/services"
 	"github.com/gin-gonic/gin"
 )
 
@@ -25,6 +26,9 @@ func main() {
 		}
 	}()
 
+	// JWT サービス初期化
+	jwtService := services.NewJWTService()
+
 	// Ginルーターの設定
 	router := gin.Default()
 
@@ -36,17 +40,23 @@ func main() {
 	// API v1グループ
 	v1 := router.Group("/api")
 
+	// 認証エンドポイント（public）
+	auth := v1.Group("/auth")
+	{
+		auth.POST("/login", handlers.AdminLogin)
+		auth.POST("/refresh", handlers.RefreshToken)
+	}
+
 	// 管理者認証エンドポイント
 	adminAuth := v1.Group("/admin")
 	{
-		adminAuth.POST("/login", handlers.AdminLogin)
-		adminAuth.POST("/logout", middleware.JWTAuth(), handlers.AdminLogout)
-		adminAuth.GET("/verify", middleware.JWTAuth(), handlers.VerifyToken)
+		adminAuth.POST("/logout", middleware.JWTAuth(jwtService), handlers.AdminLogout)
+		adminAuth.GET("/verify", middleware.JWTAuth(jwtService), handlers.VerifyToken)
 	}
 
 	// 管理者用問題管理エンドポイント
 	adminQuiz := v1.Group("/admin/quizzes")
-	adminQuiz.Use(middleware.JWTAuth())
+	adminQuiz.Use(middleware.JWTAuth(jwtService))
 	{
 		adminQuiz.GET("", handlers.GetQuizzes)
 		adminQuiz.GET("/:id", handlers.GetQuiz)
@@ -57,7 +67,7 @@ func main() {
 
 	// 管理者用セッション管理エンドポイント
 	adminSession := v1.Group("/admin/session")
-	adminSession.Use(middleware.JWTAuth())
+	adminSession.Use(middleware.JWTAuth(jwtService))
 	{
 		adminSession.POST("/start", handlers.StartSession)
 		adminSession.POST("/next", handlers.NextQuestion)
@@ -67,7 +77,7 @@ func main() {
 
 	// 管理者用ファイルアップロード
 	adminUpload := v1.Group("/admin/upload")
-	adminUpload.Use(middleware.JWTAuth())
+	adminUpload.Use(middleware.JWTAuth(jwtService))
 	{
 		adminUpload.POST("/image", handlers.UploadImage)
 	}
