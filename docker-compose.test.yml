@@ -1,31 +1,53 @@
 version: '3.8'
 
 services:
-  # PostgreSQL Database for Testing
+  # PostgreSQL Database for Testing (Optimized)
   postgres-test:
-    image: postgres:15
+    image: postgres:15-alpine
     container_name: quiz_postgres_test
     environment:
       POSTGRES_DB: quiz_db_test
       POSTGRES_USER: quiz_user
       POSTGRES_PASSWORD: quiz_password
       POSTGRES_HOST_AUTH_METHOD: trust
+      # パフォーマンス最適化設定
+      POSTGRES_INITDB_ARGS: "--auth-host=trust --auth-local=trust"
     ports:
       - "5433:5432"
     volumes:
       - ./database_schema.sql:/docker-entrypoint-initdb.d/01-init.sql
-      - ./test_data.sql:/docker-entrypoint-initdb.d/02-test-data.sql
+      - ./test_data_light.sql:/docker-entrypoint-initdb.d/02-test-data.sql
+      # PostgreSQL設定の最適化
+      - ./scripts/postgres-test.conf:/usr/local/share/postgresql/postgresql.conf.sample
     networks:
       - quiz_test_network
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U quiz_user -d quiz_db_test"]
-      interval: 5s
-      timeout: 3s
+      interval: 3s
+      timeout: 2s
       retries: 5
+      start_period: 5s
     tmpfs:
-      - /var/lib/postgresql/data
+      - /var/lib/postgresql/data:rw,noexec,nosuid,size=256m
+    command: >
+      postgres
+      -c shared_buffers=128MB
+      -c max_connections=100
+      -c effective_cache_size=256MB
+      -c maintenance_work_mem=64MB
+      -c checkpoint_completion_target=0.9
+      -c wal_buffers=16MB
+      -c default_statistics_target=100
+      -c random_page_cost=1.1
+      -c effective_io_concurrency=200
+      -c work_mem=8MB
+      -c min_wal_size=1GB
+      -c max_wal_size=4GB
+      -c fsync=off
+      -c synchronous_commit=off
+      -c full_page_writes=off
 
-  # Redis for Testing
+  # Redis for Testing (Optimized)
   redis-test:
     image: redis:7-alpine
     container_name: quiz_redis_test
@@ -35,11 +57,20 @@ services:
       - quiz_test_network
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
-      interval: 5s
-      timeout: 2s
+      interval: 3s
+      timeout: 1s
       retries: 3
+      start_period: 2s
     tmpfs:
-      - /data
+      - /data:rw,noexec,nosuid,size=64m
+    command: >
+      redis-server
+      --save ""
+      --appendonly no
+      --maxmemory 64mb
+      --maxmemory-policy allkeys-lru
+      --tcp-keepalive 60
+      --timeout 0
 
 networks:
   quiz_test_network:
