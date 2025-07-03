@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/golang-jwt/jwt/v5"
+	jwt "github.com/golang-jwt/jwt/v5"
 )
 
 // JWTClaims represents JWT token claims
@@ -20,9 +20,11 @@ type JWTClaims struct {
 	jwt.RegisteredClaims
 }
 
-var jwtSecret []byte
-var tokenBlacklist = make(map[string]bool)
-var blacklistMutex sync.RWMutex
+var (
+	jwtSecret      []byte
+	tokenBlacklist = make(map[string]bool)
+	blacklistMutex sync.RWMutex
+)
 
 func init() {
 	secret := os.Getenv("JWT_SECRET")
@@ -177,7 +179,6 @@ func JWTAuth() gin.HandlerFunc {
 			}
 			return jwtSecret, nil
 		})
-
 		if err != nil {
 			c.JSON(http.StatusUnauthorized, gin.H{
 				"success": false,

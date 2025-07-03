@@ -66,7 +66,6 @@ func (s *AuthService) GetAdminByID(id int64) (*models.Administrator, error) {
 		&admin.CreatedAt,
 		&admin.UpdatedAt,
 	)
-
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, errors.New("admin not found")
@@ -90,7 +89,6 @@ func (s *AuthService) getAdminByUsername(username string) (*models.Administrator
 		&admin.CreatedAt,
 		&admin.UpdatedAt,
 	)
-
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, errors.New("invalid credentials")

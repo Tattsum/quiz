@@ -40,7 +40,6 @@ func (s *QuizService) CreateQuiz(req models.QuizRequest) (*models.Quiz, error) {
 		req.ImageURL,
 		req.VideoURL,
 	).Scan(&quiz.ID, &quiz.CreatedAt, &quiz.UpdatedAt)
-
 	if err != nil {
 		return nil, fmt.Errorf("failed to create quiz: %w", err)
 	}
@@ -80,7 +79,6 @@ func (s *QuizService) GetQuizByID(id int64) (*models.Quiz, error) {
 		&quiz.CreatedAt,
 		&quiz.UpdatedAt,
 	)
-
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, errors.New("quiz not found")
@@ -142,7 +140,6 @@ func (s *QuizService) UpdateQuiz(id int64, req models.QuizRequest) (*models.Quiz
 		req.VideoURL,
 		id,
 	).Scan(&updatedAt)
-
 	if err != nil {
 		return nil, fmt.Errorf("failed to update quiz: %w", err)
 	}

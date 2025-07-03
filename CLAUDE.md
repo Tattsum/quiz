@@ -34,7 +34,21 @@ go test ./...
 ```
 
 ## リント・フォーマットコマンド
+### 基本コマンド
 ```
 go fmt ./...
 go vet ./...
+```
+
+### 推奨Makeタスク（commit前に必須実行）
+```
+make check     # フォーマット、リント、vet、テストを一括実行
+make fmt       # gofumptによるコードフォーマット
+make lint      # golangci-lint v2による静的解析
+make test      # テスト実行
+```
+
+### ツールのインストール
+```
+make install-tools  # gofumptとgolangci-lintをインストール
 ```

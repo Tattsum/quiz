@@ -1,0 +1,70 @@
+run:
+  timeout: 5m
+  modules-download-mode: readonly
+  go: "1.24"
+
+linters-settings:
+  gofumpt:
+    extra-rules: true
+  
+  goimports:
+    local-prefixes: github.com/Tattsum/quiz
+  
+  govet:
+    shadow: true
+  
+  misspell:
+    locale: US
+
+linters:
+  enable:
+    - errcheck
+    - gosimple
+    - govet
+    - ineffassign
+    - staticcheck
+    - typecheck
+    - unused
+    - gofumpt
+    - goimports
+    - misspell
+    - revive
+    - gosec
+    - gocritic
+    - bodyclose
+    - contextcheck
+    - durationcheck
+    - errorlint
+    - exhaustive
+    - copyloopvar
+    - forcetypeassert
+    - goconst
+    - goheader
+    - goprintffuncname
+    - makezero
+    - nilerr
+    - nilnil
+    - noctx
+    - nolintlint
+    - prealloc
+    - predeclared
+    - usetesting
+    - thelper
+    - unconvert
+    - unparam
+    - wastedassign
+    - whitespace
+
+issues:
+  exclude-use-default: false
+  exclude-rules:
+    - path: _test\.go
+      linters:
+        - gosec
+        - errcheck
+    - path: main\.go
+      linters:
+        - goconst
+  
+  max-issues-per-linter: 0
+  max-same-issues: 0

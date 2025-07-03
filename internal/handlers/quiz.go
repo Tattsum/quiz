@@ -4,9 +4,9 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/gin-gonic/gin"
 	"github.com/Tattsum/quiz/internal/models"
 	"github.com/Tattsum/quiz/internal/services"
+	"github.com/gin-gonic/gin"
 )
 
 // GetQuizzes retrieves all quizzes with pagination

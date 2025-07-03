@@ -6,7 +6,7 @@ import (
 
 	"github.com/Tattsum/quiz/internal/models"
 	"github.com/gin-gonic/gin"
-	"github.com/go-playground/validator/v10"
+	validator "github.com/go-playground/validator/v10"
 )
 
 // parseValidationErrors converts validation errors to API error format

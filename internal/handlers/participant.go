@@ -84,7 +84,6 @@ func GetParticipant(c *gin.Context) {
 		&participant.Nickname,
 		&participant.CreatedAt,
 	)
-
 	if err != nil {
 		if err == sql.ErrNoRows {
 			c.JSON(http.StatusNotFound, models.APIResponse{
@@ -369,7 +368,6 @@ func SubmitAnswer(c *gin.Context) {
 		var answer models.Answer
 		err = db.QueryRow(updateQuery, req.SelectedOption, isCorrect, existingAnswerID).Scan(
 			&answer.ID, &answer.AnsweredAt)
-
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, models.APIResponse{
 				Success: false,
@@ -389,7 +387,7 @@ func SubmitAnswer(c *gin.Context) {
 		// Broadcast answer status update
 		db := database.GetDB()
 		var totalParticipants, answeredCount int
-		var answerCounts = make(map[string]int)
+		answerCounts := make(map[string]int)
 
 		// Get total participants
 		db.QueryRow("SELECT COUNT(*) FROM participants").Scan(&totalParticipants)
@@ -426,7 +424,6 @@ func SubmitAnswer(c *gin.Context) {
 		var answer models.Answer
 		err = db.QueryRow(insertQuery, req.ParticipantID, req.QuizID, req.SelectedOption, isCorrect).Scan(
 			&answer.ID, &answer.AnsweredAt)
-
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, models.APIResponse{
 				Success: false,
@@ -446,7 +443,7 @@ func SubmitAnswer(c *gin.Context) {
 		// Broadcast answer status update
 		db := database.GetDB()
 		var totalParticipants, answeredCount int
-		var answerCounts = make(map[string]int)
+		answerCounts := make(map[string]int)
 
 		// Get total participants
 		db.QueryRow("SELECT COUNT(*) FROM participants").Scan(&totalParticipants)
@@ -572,7 +569,6 @@ func UpdateAnswer(c *gin.Context) {
 	var answer models.Answer
 	err = db.QueryRow(updateQuery, req.SelectedOption, isCorrect, answerID).Scan(
 		&answer.ParticipantID, &answer.QuizID, &answer.AnsweredAt)
-
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.APIResponse{
 			Success: false,
