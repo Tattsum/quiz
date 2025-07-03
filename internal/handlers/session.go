@@ -4,9 +4,9 @@ import (
 	"database/sql"
 	"net/http"
 
-	"github.com/gin-gonic/gin"
 	"github.com/Tattsum/quiz/internal/database"
 	"github.com/Tattsum/quiz/internal/models"
+	"github.com/gin-gonic/gin"
 )
 
 // GetSessionStatus returns current session status
@@ -178,18 +178,18 @@ func StartSession(c *gin.Context) {
 	// Broadcast session start and first question
 	BroadcastQuestionSwitch(quiz.ID, 1, 1)
 	BroadcastSessionUpdate(map[string]interface{}{
-		"session_id":          sessionID,
-		"quiz":                currentQuiz,
+		"session_id":           sessionID,
+		"quiz":                 currentQuiz,
 		"is_accepting_answers": true,
-		"status":              "started",
+		"status":               "started",
 	})
 
 	c.JSON(http.StatusOK, models.APIResponse{
 		Success: true,
 		Message: "クイズセッションが開始されました",
 		Data: map[string]interface{}{
-			"session_id":          sessionID,
-			"quiz":                currentQuiz,
+			"session_id":           sessionID,
+			"quiz":                 currentQuiz,
 			"is_accepting_answers": true,
 		},
 	})
@@ -274,18 +274,18 @@ func NextQuestion(c *gin.Context) {
 	// Broadcast question switch (assuming question numbers for now)
 	BroadcastQuestionSwitch(quiz.ID, 1, 1)
 	BroadcastSessionUpdate(map[string]interface{}{
-		"session_id":          sessionID,
-		"quiz":                currentQuiz,
+		"session_id":           sessionID,
+		"quiz":                 currentQuiz,
 		"is_accepting_answers": true,
-		"status":              "question_changed",
+		"status":               "question_changed",
 	})
 
 	c.JSON(http.StatusOK, models.APIResponse{
 		Success: true,
 		Message: "次の問題に進みました",
 		Data: map[string]interface{}{
-			"session_id":          sessionID,
-			"quiz":                currentQuiz,
+			"session_id":           sessionID,
+			"quiz":                 currentQuiz,
 			"is_accepting_answers": true,
 		},
 	})
@@ -339,7 +339,7 @@ func ToggleAnswers(c *gin.Context) {
 	// Broadcast session update
 	BroadcastSessionUpdate(map[string]interface{}{
 		"is_accepting_answers": req.IsAcceptingAnswers,
-		"status":              "answer_acceptance_toggled",
+		"status":               "answer_acceptance_toggled",
 	})
 
 	c.JSON(http.StatusOK, models.APIResponse{

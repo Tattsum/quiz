@@ -4,15 +4,15 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/Tattsum/quiz/internal/models"
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
-	"github.com/Tattsum/quiz/internal/models"
 )
 
 // parseValidationErrors converts validation errors to API error format
 func parseValidationErrors(err error) []models.ValidationError {
 	var errors []models.ValidationError
-	
+
 	if validationErrors, ok := err.(validator.ValidationErrors); ok {
 		for _, e := range validationErrors {
 			errors = append(errors, models.ValidationError{
@@ -21,7 +21,7 @@ func parseValidationErrors(err error) []models.ValidationError {
 			})
 		}
 	}
-	
+
 	return errors
 }
 
@@ -74,17 +74,17 @@ func getValidationMessage(err validator.FieldError) string {
 func getPaginationParams(c *gin.Context) (int, int, error) {
 	pageStr := c.DefaultQuery("page", "1")
 	limitStr := c.DefaultQuery("limit", "20")
-	
+
 	page, err := strconv.Atoi(pageStr)
 	if err != nil || page < 1 {
 		page = 1
 	}
-	
+
 	limit, err := strconv.Atoi(limitStr)
 	if err != nil || limit < 1 || limit > 100 {
 		limit = 20
 	}
-	
+
 	return page, limit, nil
 }
 

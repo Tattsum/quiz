@@ -6,9 +6,9 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/gin-gonic/gin"
 	"github.com/Tattsum/quiz/internal/database"
 	"github.com/Tattsum/quiz/internal/models"
+	"github.com/gin-gonic/gin"
 )
 
 // GetCurrentResults returns results for the current active quiz
@@ -270,7 +270,7 @@ func GetOverallRanking(c *gin.Context) {
 
 	c.JSON(http.StatusOK, models.APIResponse{
 		Success: true,
-		Data: response,
+		Data:    response,
 	})
 }
 
@@ -384,7 +384,7 @@ func GetQuizRanking(c *gin.Context) {
 
 	c.JSON(http.StatusOK, models.APIResponse{
 		Success: true,
-		Data: response,
+		Data:    response,
 	})
 }
 
@@ -494,6 +494,6 @@ func GetParticipantRanking(c *gin.Context) {
 
 	c.JSON(http.StatusOK, models.APIResponse{
 		Success: true,
-		Data: response,
+		Data:    response,
 	})
 }

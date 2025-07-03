@@ -79,7 +79,7 @@ func RateLimit() gin.HandlerFunc {
 	return gin.HandlerFunc(func(c *gin.Context) {
 		clientIP := c.ClientIP()
 		now := time.Now()
-		
+
 		// Determine rate limit based on endpoint
 		limit := 100 // default: 100 requests per minute
 		if strings.HasPrefix(c.Request.URL.Path, "/api/admin") {
@@ -220,7 +220,7 @@ func GenerateJWT(adminID int64, username string) (string, time.Time, error) {
 	}
 
 	expirationTime := time.Now().Add(time.Duration(expiresHours) * time.Hour)
-	
+
 	claims := &JWTClaims{
 		AdminID:  adminID,
 		Username: username,

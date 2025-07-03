@@ -7,10 +7,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gin-gonic/gin"
-	"github.com/gorilla/websocket"
 	"github.com/Tattsum/quiz/internal/database"
 	"github.com/Tattsum/quiz/internal/models"
+	"github.com/gin-gonic/gin"
+	"github.com/gorilla/websocket"
 )
 
 const (
@@ -24,9 +24,9 @@ var (
 			return true
 		},
 	}
-	
+
 	// Store active WebSocket connections
-	connections = make(map[*websocket.Conn]*ClientConnection)
+	connections      = make(map[*websocket.Conn]*ClientConnection)
 	connectionsMutex = sync.RWMutex{}
 )
 
@@ -51,9 +51,9 @@ type SubscribeMessage struct {
 
 // QuestionSwitchNotification represents a question switch notification
 type QuestionSwitchNotification struct {
-	QuizID         int64 `json:"quiz_id"`
-	QuestionNumber int   `json:"question_number"`
-	TotalQuestions int   `json:"total_questions"`
+	QuizID         int64     `json:"quiz_id"`
+	QuestionNumber int       `json:"question_number"`
+	TotalQuestions int       `json:"total_questions"`
 	SwitchedAt     time.Time `json:"switched_at"`
 }
 
@@ -66,12 +66,12 @@ type VotingEndNotification struct {
 
 // AnswerStatusUpdate represents current answer status
 type AnswerStatusUpdate struct {
-	QuizID          int64              `json:"quiz_id"`
-	QuestionID      int64              `json:"question_id"`
-	TotalParticipants int              `json:"total_participants"`
-	AnsweredCount   int                `json:"answered_count"`
-	AnswerCounts    map[string]int     `json:"answer_counts"`
-	UpdatedAt       time.Time          `json:"updated_at"`
+	QuizID            int64          `json:"quiz_id"`
+	QuestionID        int64          `json:"question_id"`
+	TotalParticipants int            `json:"total_participants"`
+	AnsweredCount     int            `json:"answered_count"`
+	AnswerCounts      map[string]int `json:"answer_counts"`
+	UpdatedAt         time.Time      `json:"updated_at"`
 }
 
 // WebSocketResults handles WebSocket connections for real-time results
@@ -80,10 +80,10 @@ func WebSocketResults(c *gin.Context) {
 	connectionsMutex.RLock()
 	currentConnections := len(connections)
 	connectionsMutex.RUnlock()
-	
+
 	if currentConnections >= MaxConnections {
 		c.JSON(http.StatusServiceUnavailable, gin.H{
-			"error": "Maximum connections reached",
+			"error":           "Maximum connections reached",
 			"max_connections": MaxConnections,
 		})
 		return
@@ -101,7 +101,7 @@ func WebSocketResults(c *gin.Context) {
 		Conn:          conn,
 		LastHeartbeat: time.Now(),
 	}
-	
+
 	connectionsMutex.Lock()
 	connections[conn] = client
 	log.Printf("New WebSocket connection established. Total connections: %d/%d", len(connections), MaxConnections)
@@ -125,7 +125,7 @@ func WebSocketResults(c *gin.Context) {
 	go func() {
 		ticker := time.NewTicker(30 * time.Second)
 		defer ticker.Stop()
-		
+
 		for {
 			select {
 			case <-ticker.C:
@@ -156,16 +156,16 @@ func WebSocketResults(c *gin.Context) {
 			switch msg.Type {
 			case "subscribe":
 				client.QuizID = &msg.QuizID
-				
+
 				// Send current results immediately
 				results, err := getCurrentQuizResults(msg.QuizID)
 				if err == nil {
 					sendMessage(conn, "result_update", results)
 				}
-				
+
 			case "unsubscribe":
 				client.QuizID = nil
-				
+
 			case "heartbeat":
 				client.LastHeartbeat = time.Now()
 				sendMessage(conn, "heartbeat_ack", map[string]interface{}{
@@ -227,7 +227,7 @@ func BroadcastQuestionSwitch(quizID int64, questionNumber, totalQuestions int) {
 			}(conn)
 		}
 	}
-	
+
 	log.Printf("Broadcasted question switch for quiz %d to %d subscribers", quizID, GetSubscriptionCount(quizID))
 }
 
@@ -249,7 +249,7 @@ func BroadcastVotingEnd(quizID, questionID int64) {
 			}(conn)
 		}
 	}
-	
+
 	log.Printf("Broadcasted voting end for quiz %d, question %d to %d subscribers", quizID, questionID, GetSubscriptionCount(quizID))
 }
 
@@ -304,7 +304,7 @@ func CleanupConnections() {
 		case <-ticker.C:
 			connectionsMutex.Lock()
 			cutoff := time.Now().Add(-2 * time.Minute)
-			
+
 			for conn, client := range connections {
 				if client.LastHeartbeat.Before(cutoff) {
 					conn.Close()
@@ -327,7 +327,7 @@ func GetConnectionCount() int {
 func GetSubscriptionCount(quizID int64) int {
 	connectionsMutex.RLock()
 	defer connectionsMutex.RUnlock()
-	
+
 	count := 0
 	for _, client := range connections {
 		if client.QuizID != nil && *client.QuizID == quizID {

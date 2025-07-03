@@ -5,10 +5,10 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/gin-gonic/gin"
+	"github.com/Tattsum/quiz/internal/database"
 	"github.com/Tattsum/quiz/internal/handlers"
 	"github.com/Tattsum/quiz/internal/middleware"
-	"github.com/Tattsum/quiz/internal/database"
+	"github.com/gin-gonic/gin"
 )
 
 func main() {
