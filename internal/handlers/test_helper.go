@@ -15,7 +15,7 @@ func setupTestEnv() {
 		_ = os.Setenv("DB_HOST", "localhost")
 	}
 	if os.Getenv("DB_PORT") == "" {
-		_ = os.Setenv("DB_PORT", "5432")
+		_ = os.Setenv("DB_PORT", "5433")
 	}
 	if os.Getenv("DB_USER") == "" {
 		_ = os.Setenv("DB_USER", "quiz_user")
