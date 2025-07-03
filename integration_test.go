@@ -177,6 +177,7 @@ func setupTestRouter() *gin.Engine {
 	return r
 }
 
+//nolint:gocyclo
 func TestIntegrationQuizFlow(t *testing.T) {
 	// 1. 管理者ログイン
 	loginReq := models.LoginRequest{

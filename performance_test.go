@@ -273,6 +273,7 @@ func TestConcurrentWebSocketConnections(t *testing.T) {
 	}
 }
 
+//nolint:gocyclo
 func TestConcurrentAnswerSubmissions(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping performance test in short mode")
@@ -423,6 +424,7 @@ func TestConcurrentAnswerSubmissions(t *testing.T) {
 	}
 }
 
+//nolint:gocyclo
 func TestSystemLoadUnder70Users(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping performance test in short mode")

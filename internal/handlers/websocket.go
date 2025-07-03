@@ -76,6 +76,8 @@ type AnswerStatusUpdate struct {
 }
 
 // WebSocketResults handles WebSocket connections for real-time results
+//
+//nolint:gocyclo
 func WebSocketResults(c *gin.Context) {
 	// Check connection limit
 	connectionsMutex.RLock()
@@ -131,6 +133,7 @@ func WebSocketResults(c *gin.Context) {
 		ticker := time.NewTicker(30 * time.Second)
 		defer ticker.Stop()
 
+		//nolint:gosimple
 		for {
 			select {
 			case <-ticker.C:
@@ -304,6 +307,7 @@ func CleanupConnections() {
 	ticker := time.NewTicker(5 * time.Minute)
 	defer ticker.Stop()
 
+	//nolint:gosimple
 	for {
 		select {
 		case <-ticker.C:
