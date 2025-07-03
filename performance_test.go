@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"os"
 	"sync"
 	"testing"
 	"time"
@@ -17,6 +18,7 @@ import (
 const (
 	// パフォーマンステスト用の設定
 	MaxConcurrentUsers = 70
+	runPerfTestsEnv    = "true"
 	BaseURL            = "http://localhost:8080"
 	WebSocketURL       = "ws://localhost:8080/ws"
 	TestDuration       = 30 * time.Second
@@ -43,7 +45,7 @@ type RequestResult struct {
 }
 
 func TestConcurrentParticipantRegistration(t *testing.T) {
-	if testing.Short() {
+	if testing.Short() && os.Getenv("RUN_PERFORMANCE_TESTS") != runPerfTestsEnv {
 		t.Skip("Skipping performance test in short mode")
 	}
 
@@ -161,7 +163,7 @@ func TestConcurrentParticipantRegistration(t *testing.T) {
 }
 
 func TestConcurrentWebSocketConnections(t *testing.T) {
-	if testing.Short() {
+	if testing.Short() && os.Getenv("RUN_PERFORMANCE_TESTS") != runPerfTestsEnv {
 		t.Skip("Skipping performance test in short mode")
 	}
 
@@ -275,7 +277,7 @@ func TestConcurrentWebSocketConnections(t *testing.T) {
 
 //nolint:gocyclo
 func TestConcurrentAnswerSubmissions(t *testing.T) {
-	if testing.Short() {
+	if testing.Short() && os.Getenv("RUN_PERFORMANCE_TESTS") != runPerfTestsEnv {
 		t.Skip("Skipping performance test in short mode")
 	}
 
@@ -426,7 +428,7 @@ func TestConcurrentAnswerSubmissions(t *testing.T) {
 
 //nolint:gocyclo
 func TestSystemLoadUnder70Users(t *testing.T) {
-	if testing.Short() {
+	if testing.Short() && os.Getenv("RUN_PERFORMANCE_TESTS") != runPerfTestsEnv {
 		t.Skip("Skipping performance test in short mode")
 	}
 
