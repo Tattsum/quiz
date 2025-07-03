@@ -12,10 +12,15 @@
   "assigneesFromCodeOwners": true,
   "reviewersFromCodeOwners": true,
   "prConcurrentLimit": 3,
-  "labels": ["dependencies", "renovate"],
+  "labels": [
+    "dependencies",
+    "renovate"
+  ],
   "lockFileMaintenance": {
     "enabled": true,
-    "schedule": ["before 6am on Monday"]
+    "schedule": [
+      "before 6am on Monday"
+    ]
   },
   "major": {
     "minimumReleaseAge": "5 days"
@@ -33,59 +38,102 @@
   ],
   "packageRules": [
     {
-      "matchManagers": ["gomod"],
+      "matchManagers": [
+        "gomod"
+      ],
       "groupName": "Go dependencies",
-      "labels": ["go", "dependencies"],
-      "schedule": ["before 10am every weekday"],
+      "labels": [
+        "go",
+        "dependencies"
+      ],
+      "schedule": [
+        "before 10am every weekday"
+      ],
       "automerge": false,
       "reviewersFromCodeOwners": true
     },
     {
-      "matchManagers": ["npm"],
-      "matchPaths": ["admin-dashboard/**"],
+      "matchManagers": [
+        "npm"
+      ],
+      "matchFileNames": [
+        "admin-dashboard/**"
+      ],
       "groupName": "Nuxt3 Admin Dashboard dependencies",
-      "labels": ["nuxt", "dependencies"],
-      "schedule": ["before 10am every weekday"],
+      "labels": [
+        "nuxt",
+        "dependencies"
+      ],
+      "schedule": [
+        "before 10am every weekday"
+      ],
       "automerge": false,
       "reviewersFromCodeOwners": true
     },
     {
-      "matchManagers": ["npm"],
-      "matchPaths": ["participant-app/**"],
+      "matchManagers": [
+        "npm"
+      ],
+      "matchFileNames": [
+        "participant-app/**"
+      ],
       "groupName": "Next.js Participant App dependencies",
-      "labels": ["nextjs", "dependencies"],
-      "schedule": ["before 10am every weekday"],
+      "labels": [
+        "nextjs",
+        "dependencies"
+      ],
+      "schedule": [
+        "before 10am every weekday"
+      ],
       "automerge": false,
       "reviewersFromCodeOwners": true
     },
     {
-      "matchDepTypes": ["devDependencies"],
+      "matchDepTypes": [
+        "devDependencies"
+      ],
       "groupName": "Dev dependencies",
-      "labels": ["devDependencies"],
-      "schedule": ["before 10am every weekday"],
+      "labels": [
+        "devDependencies"
+      ],
+      "schedule": [
+        "before 10am every weekday"
+      ],
       "automerge": false
     },
     {
-      "matchUpdateTypes": ["patch"],
+      "matchUpdateTypes": [
+        "patch"
+      ],
       "automerge": true,
       "automergeType": "pr",
       "platformAutomerge": true
     },
     {
-      "matchUpdateTypes": ["minor"],
+      "matchUpdateTypes": [
+        "minor"
+      ],
       "groupName": "Minor updates",
-      "schedule": ["before 10am every weekday"]
+      "schedule": [
+        "before 10am every weekday"
+      ]
     },
     {
-      "matchUpdateTypes": ["major"],
+      "matchUpdateTypes": [
+        "major"
+      ],
       "groupName": "Major updates",
-      "schedule": ["on the first day of the month"],
+      "schedule": [
+        "on the first day of the month"
+      ],
       "dependencyDashboard": true
     }
   ],
   "vulnerabilityAlerts": {
     "enabled": true,
-    "schedule": ["at any time"]
+    "schedule": [
+      "at any time"
+    ]
   },
   "dependencyDashboard": true,
   "dependencyDashboardTitle": "Dependency Dashboard",
@@ -98,7 +146,9 @@
   "customManagers": [
     {
       "customType": "regex",
-      "fileMatch": ["^Makefile$"],
+      "managerFilePatterns": [
+        "/^Makefile$/"
+      ],
       "matchStrings": [
         "GOLANGCI_LINT_VERSION := (?<currentValue>v?\\d+\\.\\d+\\.\\d+)"
       ],
@@ -107,7 +157,9 @@
     },
     {
       "customType": "regex",
-      "fileMatch": ["^Makefile$"],
+      "managerFilePatterns": [
+        "/^Makefile$/"
+      ],
       "matchStrings": [
         "GOFUMPT_VERSION := (?<currentValue>v?\\d+\\.\\d+\\.\\d+)"
       ],
