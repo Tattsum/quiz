@@ -392,6 +392,55 @@ jobs:
           psql -h localhost -U quiz_user -d quiz_db_test -f test_data.sql
         fi
 
+    - name: Build application
+      env:
+        DB_HOST: localhost
+        DB_PORT: 5432
+        DB_USER: quiz_user
+        DB_PASSWORD: quiz_password
+        DB_NAME: quiz_db_test
+        REDIS_HOST: localhost
+        REDIS_PORT: 6379
+        JWT_SECRET: test-jwt-secret-for-ci
+      run: |
+        go build -o quiz .
+
+    - name: Start server in background
+      env:
+        DB_HOST: localhost
+        DB_PORT: 5432
+        DB_USER: quiz_user
+        DB_PASSWORD: quiz_password
+        DB_NAME: quiz_db_test
+        REDIS_HOST: localhost
+        REDIS_PORT: 6379
+        PORT: 8080
+        GIN_MODE: release
+        JWT_SECRET: test-jwt-secret-for-ci
+      run: |
+        ./quiz &
+        echo $! > server.pid
+        
+        # Wait for server to start and check health
+        echo "Waiting for server to start..."
+        sleep 3  # Give server a moment to initialize
+        for i in {1..30}; do
+          echo "Attempt $i: Checking server health..."
+          if curl -f http://localhost:8080/api/session/status >/dev/null 2>&1; then
+            echo "✅ Server is running and healthy!"
+            curl -s http://localhost:8080/api/session/status | echo "Health check response: $(cat)"
+            break
+          fi
+          if [ $i -eq 30 ]; then
+            echo "❌ Server failed to start within 30 seconds"
+            echo "Server logs:"
+            ps aux | grep quiz || echo "No quiz process found"
+            cat server.pid | xargs kill -9 || true
+            exit 1
+          fi
+          sleep 1
+        done
+
     - name: Run performance tests
       env:
         DB_HOST: localhost
@@ -405,6 +454,14 @@ jobs:
         RUN_PERFORMANCE_TESTS: "true"
       run: |
         go test -v -run "TestConcurrent|TestSystemLoad" -timeout 15m ./performance_test.go
+
+    - name: Stop server
+      if: always()
+      run: |
+        if [ -f server.pid ]; then
+          cat server.pid | xargs kill -9 || true
+          rm -f server.pid
+        fi
 
   # Coverage Consolidation Job
   go-coverage-report:
