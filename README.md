@@ -1,6 +1,6 @@
-# Go言語クイズ大会システム
+# リアルタイムクイズ大会システム
 
-リアルタイムクイズ大会を開催するためのREST APIシステムです。
+リアルタイムクイズ大会を開催するための統合システムです。Go言語バックエンドAPI、Nuxt3管理ダッシュボード、Next.js参加者アプリから構成されています。
 
 ## 機能
 
@@ -14,21 +14,46 @@
 - ランキング機能
 - WebSocketによるリアルタイム更新
 
-## 技術スタック
+## システム構成
 
+### 🔧 Go言語バックエンドAPI (ルート)
 - **言語**: Go 1.24+
-- **フレームワーク**: Gin
+- **フレームワーク**: Gin  
 - **データベース**: PostgreSQL
 - **認証**: JWT
 - **リアルタイム通信**: WebSocket
 - **パスワードハッシュ**: bcrypt
 
+### 🎛️ Nuxt3管理ダッシュボード (admin-dashboard/)
+- **フレームワーク**: Nuxt3
+- **スタイリング**: Tailwind CSS
+- **機能**: 問題管理、セッション制御、リアルタイム統計表示
+
+### 📱 Next.js参加者アプリ (participant-app/)
+- **フレームワーク**: Next.js 14 (App Router)
+- **言語**: TypeScript
+- **スタイリング**: Tailwind CSS  
+- **機能**: スマートフォン向けクイズ参加、ユニバーサルデザイン対応
+
 ## セットアップ
 
-### 1. 依存関係のインストール
+### 1. 全体の依存関係インストール
 
+#### Go言語バックエンド
 ```bash
 go mod download
+```
+
+#### Nuxt3管理ダッシュボード
+```bash
+cd admin-dashboard
+npm install
+```
+
+#### Next.js参加者アプリ  
+```bash
+cd participant-app
+npm install
 ```
 
 ### 2. 環境設定
@@ -88,11 +113,25 @@ VALUES ('admin', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy',
 
 ### 5. アプリケーション起動
 
+#### Go言語バックエンド
 ```bash
 go run main.go
 ```
-
 サーバーは `http://localhost:8080` で起動します。
+
+#### Nuxt3管理ダッシュボード  
+```bash
+cd admin-dashboard
+npm run dev
+```
+管理ダッシュボードは `http://localhost:3000` で起動します。
+
+#### Next.js参加者アプリ
+```bash
+cd participant-app
+npm run dev  
+```
+参加者アプリは `http://localhost:3001` で起動します。
 
 ## API仕様
 
@@ -179,20 +218,39 @@ curl -X POST http://localhost:8080/api/answers \
 
 ```
 .
-├── main.go                     # メインアプリケーション
-├── go.mod                      # Go モジュール定義
-├── .env.example               # 環境変数テンプレート
-├── database_schema.sql        # データベーススキーマ
-├── api_design.md             # API設計書
-├── README.md                 # プロジェクト説明
-├── internal/
-│   ├── database/            # データベース接続
-│   ├── handlers/            # HTTPハンドラ
-│   ├── middleware/          # ミドルウェア
-│   ├── models/              # データモデル
-│   └── services/            # ビジネスロジック
-└── uploads/                 # アップロードファイル
-    └── images/
+├── main.go                        # Go バックエンドメイン
+├── go.mod                         # Go モジュール定義
+├── .env.example                   # 環境変数テンプレート
+├── database_schema.sql            # データベーススキーマ
+├── api_design.md                  # API設計書
+├── CLAUDE.md                      # 開発ルール
+├── README.md                      # プロジェクト説明
+├── internal/                      # Go バックエンド
+│   ├── database/                  # データベース接続
+│   ├── handlers/                  # HTTPハンドラ
+│   ├── middleware/                # ミドルウェア
+│   ├── models/                    # データモデル
+│   └── services/                  # ビジネスロジック
+├── uploads/                       # アップロードファイル
+│   └── images/
+├── admin-dashboard/               # Nuxt3管理ダッシュボード
+│   ├── components/                # Vueコンポーネント
+│   ├── pages/                     # ページ
+│   ├── layouts/                   # レイアウト
+│   ├── middleware/                # ミドルウェア
+│   ├── assets/                    # アセット
+│   ├── nuxt.config.ts             # Nuxt設定
+│   ├── package.json               # 依存関係
+│   └── README.md                  # 管理ダッシュボード説明
+└── participant-app/               # Next.js参加者アプリ
+    ├── src/
+    │   ├── app/                   # App Router
+    │   ├── components/            # Reactコンポーネント
+    │   ├── lib/                   # ユーティリティ
+    │   └── types/                 # TypeScript型定義
+    ├── next.config.js             # Next.js設定
+    ├── package.json               # 依存関係
+    └── README.md                  # 参加者アプリ説明
 ```
 
 ## セキュリティ
