@@ -127,7 +127,7 @@ jobs:
     - name: Run tests with coverage
       env:
         DB_HOST: localhost
-        DB_PORT: 5433
+        DB_PORT: 5432
         DB_USER: quiz_user
         DB_PASSWORD: quiz_password
         DB_NAME: quiz_db_test
@@ -294,7 +294,7 @@ jobs:
     - name: Run integration tests
       env:
         DB_HOST: localhost
-        DB_PORT: 5433
+        DB_PORT: 5432
         DB_USER: quiz_user
         DB_PASSWORD: quiz_password
         DB_NAME: quiz_db_test
