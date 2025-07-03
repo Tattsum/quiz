@@ -12,20 +12,20 @@ import (
 	"testing"
 	"time"
 
+	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
+	_ "github.com/lib/pq"
+
 	"github.com/Tattsum/quiz/internal/database"
 	"github.com/Tattsum/quiz/internal/handlers"
 	"github.com/Tattsum/quiz/internal/middleware"
 	"github.com/Tattsum/quiz/internal/models"
 	"github.com/Tattsum/quiz/internal/services"
-	"github.com/gin-gonic/gin"
-	"github.com/joho/godotenv"
-	_ "github.com/lib/pq"
 )
 
 var (
 	testDB     *sql.DB
 	testRouter *gin.Engine
-	setupOnce  sync.Once
 	dbMutex    sync.RWMutex
 )
 
@@ -229,26 +229,6 @@ func cleanupTestData(t *testing.T, prefix string) {
 	// 特定のプレフィックスを持つテストデータのみ削除
 	_, _ = testDB.Exec("DELETE FROM answers WHERE participant_id IN (SELECT id FROM participants WHERE nickname LIKE $1)", prefix+"%")
 	_, _ = testDB.Exec("DELETE FROM participants WHERE nickname LIKE $1", prefix+"%")
-}
-
-// 並列実行対応のためのテストデータ作成ヘルパー
-func createTestParticipant(t *testing.T, nickname string) int64 {
-	t.Helper()
-	dbMutex.Lock()
-	defer dbMutex.Unlock()
-
-	var participantID int64
-	err := testDB.QueryRow(`
-		INSERT INTO participants (nickname, created_at)
-		VALUES ($1, CURRENT_TIMESTAMP)
-		RETURNING id
-	`, nickname).Scan(&participantID)
-	
-	if err != nil {
-		t.Fatalf("Failed to create test participant %s: %v", nickname, err)
-	}
-	
-	return participantID
 }
 
 //nolint:gocyclo
