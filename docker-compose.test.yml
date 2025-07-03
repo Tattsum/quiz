@@ -3,7 +3,7 @@ version: '3.8'
 services:
   # PostgreSQL Database for Testing
   postgres-test:
-    image: postgres:15
+    image: postgres:17
     container_name: quiz_postgres_test
     environment:
       POSTGRES_DB: quiz_db_test
@@ -27,7 +27,7 @@ services:
 
   # Redis for Testing
   redis-test:
-    image: redis:7-alpine
+    image: redis:8-alpine
     container_name: quiz_redis_test
     ports:
       - "6380:6379"

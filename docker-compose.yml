@@ -3,7 +3,7 @@ version: '3.8'
 services:
   # PostgreSQL Database
   postgres:
-    image: postgres:15
+    image: postgres:17
     container_name: quiz_postgres
     environment:
       POSTGRES_DB: quiz_db
@@ -25,7 +25,7 @@ services:
 
   # Redis for session management and caching
   redis:
-    image: redis:7-alpine
+    image: redis:8-alpine
     container_name: quiz_redis
     ports:
       - "6379:6379"
