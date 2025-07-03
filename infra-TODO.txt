@@ -1,0 +1,410 @@
+# 💰 個人開発向け低コストインフラ構成 TODO（IaC対応版）
+
+## 🎯 推奨構成：GCP + Cloudflare + Terraform
+
+Infrastructure as Code（IaC）による管理可能な構成として、以下を採用します：
+
+- **インフラ管理**: Terraform（GCP + Cloudflare リソース）
+- **構成管理**: Docker + docker-compose
+- **CI/CD**: GitHub Actions
+- **月額予算**: 約3,000円
+
+## 💰 月額コスト内訳（概算）
+
+| サービス | スペック | 月額（円） |
+|---------|----------|-----------|
+| **Compute Engine** | e2-medium (2vCPU, 4GB) | 約1,800円 |
+| **Cloud SQL** | db-f1-micro (0.6GB, 10GB SSD) | 約800円 |
+| **Memorystore Redis** | Basic 1GB | 約400円 |
+| **Cloud Storage** | 10GB + 転送量 | 約100円 |
+| **固定IP** | 1個 | 約100円 |
+| **Cloudflare** | 無料プラン | 0円 |
+| **Terraform Cloud** | 無料プラン | 0円 |
+| **合計** | | **約3,200円** |
+
+---
+
+## 🏗️ Infrastructure as Code 基盤構築
+
+### 📁 プロジェクト構造
+
+```
+quiz/
+├── terraform/                    # Terraformインフラコード
+│   ├── environments/            # 環境別設定
+│   │   ├── dev/                # 開発環境
+│   │   │   ├── main.tf
+│   │   │   ├── variables.tf
+│   │   │   └── terraform.tfvars
+│   │   └── prod/               # 本番環境
+│   │       ├── main.tf
+│   │       ├── variables.tf
+│   │       └── terraform.tfvars
+│   ├── modules/                # 再利用可能なモジュール
+│   │   ├── gcp-network/        # VPC、サブネット
+│   │   ├── gcp-compute/        # Compute Engine
+│   │   ├── gcp-database/       # Cloud SQL、Redis
+│   │   ├── gcp-storage/        # Cloud Storage
+│   │   └── cloudflare/         # Cloudflare設定
+│   └── backend.tf              # Terraform状態管理
+├── docker/                     # Docker関連
+│   ├── docker-compose.prod.yml
+│   └── .env.production.example
+└── .github/
+    └── workflows/
+        ├── terraform-plan.yml  # PRでのプラン確認
+        └── terraform-apply.yml # mainブランチでのapply
+```
+
+### [TODO] Terraformプロジェクト初期設定
+
+#### Terraform基本構成
+- [ ] **ディレクトリ構造作成**: 上記の構造に従ってディレクトリを作成
+- [ ] **バージョン固定**: `.terraform-version` ファイルで Terraform バージョンを固定
+- [ ] **プロバイダー設定**: GCP、Cloudflareプロバイダーの設定
+- [ ] **状態管理**: Terraform Cloud または GCS バックエンドの設定
+
+#### terraform/backend.tf
+```hcl
+terraform {
+  backend "gcs" {
+    bucket = "quiz-terraform-state"
+    prefix = "terraform/state"
+  }
+}
+```
+
+#### terraform/environments/prod/main.tf
+```hcl
+terraform {
+  required_version = "~> 1.5"
+  
+  required_providers {
+    google = {
+      source  = "hashicorp/google"
+      version = "~> 5.0"
+    }
+    cloudflare = {
+      source  = "hashicorp/cloudflare"
+      version = "~> 4.0"
+    }
+  }
+}
+
+module "network" {
+  source = "../../modules/gcp-network"
+  
+  project_id   = var.project_id
+  region       = var.region
+  environment  = var.environment
+}
+
+module "compute" {
+  source = "../../modules/gcp-compute"
+  
+  project_id   = var.project_id
+  zone         = var.zone
+  network_id   = module.network.network_id
+  subnet_id    = module.network.subnet_id
+  environment  = var.environment
+}
+
+module "database" {
+  source = "../../modules/gcp-database"
+  
+  project_id   = var.project_id
+  region       = var.region
+  network_id   = module.network.network_id
+  environment  = var.environment
+}
+
+module "storage" {
+  source = "../../modules/gcp-storage"
+  
+  project_id   = var.project_id
+  region       = var.region
+  environment  = var.environment
+}
+
+module "cloudflare" {
+  source = "../../modules/cloudflare"
+  
+  domain       = var.domain
+  backend_ip   = module.compute.external_ip
+  environment  = var.environment
+}
+```
+
+### [TODO] Terraformモジュール開発
+
+#### GCPネットワークモジュール
+- [ ] **VPC作成**: カスタムモードVPC
+- [ ] **サブネット**: プライベートサブネット設定
+- [ ] **ファイアウォール**: 必要最小限のルール
+- [ ] **Cloud NAT**: アウトバウンド通信用
+
+#### modules/gcp-network/main.tf
+```hcl
+resource "google_compute_network" "vpc" {
+  name                    = "${var.environment}-quiz-vpc"
+  auto_create_subnetworks = false
+  project                 = var.project_id
+}
+
+resource "google_compute_subnetwork" "subnet" {
+  name          = "${var.environment}-quiz-subnet"
+  ip_cidr_range = var.subnet_cidr
+  region        = var.region
+  network       = google_compute_network.vpc.id
+  project       = var.project_id
+  
+  private_ip_google_access = true
+}
+
+resource "google_compute_firewall" "allow_http_https" {
+  name    = "${var.environment}-allow-http-https"
+  network = google_compute_network.vpc.name
+  project = var.project_id
+  
+  allow {
+    protocol = "tcp"
+    ports    = ["80", "443"]
+  }
+  
+  source_ranges = var.cloudflare_ips
+  target_tags   = ["web-server"]
+}
+```
+
+#### GCP Computeモジュール
+- [ ] **インスタンステンプレート**: 再現可能な構成
+- [ ] **起動スクリプト**: cloud-initによる自動セットアップ
+- [ ] **固定IP**: 外部IPアドレスの予約
+- [ ] **IAMサービスアカウント**: 最小権限
+
+#### modules/gcp-compute/main.tf
+```hcl
+resource "google_compute_instance_template" "app" {
+  name_prefix  = "${var.environment}-quiz-"
+  machine_type = var.machine_type
+  
+  disk {
+    source_image = "ubuntu-os-cloud/ubuntu-2204-lts"
+    disk_size_gb = 20
+    disk_type    = "pd-standard"
+  }
+  
+  network_interface {
+    network    = var.network_id
+    subnetwork = var.subnet_id
+    
+    access_config {
+      nat_ip = google_compute_address.static.address
+    }
+  }
+  
+  metadata = {
+    user-data = templatefile("${path.module}/cloud-init.yaml", {
+      docker_compose_content = var.docker_compose_content
+    })
+  }
+  
+  service_account {
+    email  = google_service_account.app.email
+    scopes = ["cloud-platform"]
+  }
+  
+  tags = ["web-server"]
+}
+```
+
+#### GCPデータベースモジュール
+- [ ] **Cloud SQL**: 最小構成での作成
+- [ ] **プライベートIP**: VPCピアリング設定
+- [ ] **Memorystore Redis**: Basic Tier構成
+- [ ] **バックアップポリシー**: 手動バックアップのみ
+
+#### GCPストレージモジュール
+- [ ] **Cloud Storage**: 画像アップロード用バケット
+- [ ] **IAMポリシー**: 公開読み取り設定
+- [ ] **ライフサイクル**: 古いファイルの自動削除
+- [ ] **CORS設定**: フロントエンドからのアクセス許可
+
+#### Cloudflareモジュール
+- [ ] **DNSレコード**: AレコードでGCP IPを指定
+- [ ] **SSL/TLS設定**: フルエンドツーエンド暗号化
+- [ ] **ページルール**: キャッシュ、リダイレクト設定
+- [ ] **ファイアウォールルール**: セキュリティ設定
+
+### [TODO] CI/CDパイプライン（IaC対応）
+
+#### GitHub Actions Terraform ワークフロー
+- [ ] **terraform-plan.yml**: PRでの変更確認
+- [ ] **terraform-apply.yml**: mainブランチでの自動適用
+- [ ] **環境分離**: dev/prod環境の切り替え
+- [ ] **承認フロー**: production適用前の手動承認
+
+#### .github/workflows/terraform-plan.yml
+```yaml
+name: Terraform Plan
+
+on:
+  pull_request:
+    paths:
+      - 'terraform/**'
+
+jobs:
+  terraform-plan:
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        environment: [dev, prod]
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: 1.5.7
+    
+    - name: Terraform Init
+      working-directory: terraform/environments/${{ matrix.environment }}
+      run: terraform init
+      env:
+        GOOGLE_CREDENTIALS: ${{ secrets.GCP_SA_KEY }}
+    
+    - name: Terraform Plan
+      working-directory: terraform/environments/${{ matrix.environment }}
+      run: |
+        terraform plan -out=tfplan
+        terraform show -no-color tfplan > plan.txt
+      env:
+        GOOGLE_CREDENTIALS: ${{ secrets.GCP_SA_KEY }}
+        CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+    
+    - name: Comment PR
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const fs = require('fs');
+          const plan = fs.readFileSync('terraform/environments/${{ matrix.environment }}/plan.txt', 'utf8');
+          const output = `#### Terraform Plan - ${{ matrix.environment }}
+          \`\`\`
+          ${plan}
+          \`\`\``;
+          
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: output
+          });
+```
+
+### [TODO] アプリケーションデプロイ自動化
+
+#### Compute Engine起動スクリプト
+- [ ] **cloud-init設定**: Docker、docker-compose自動インストール
+- [ ] **環境変数注入**: Secret Managerからの取得
+- [ ] **ヘルスチェック**: 起動確認スクリプト
+- [ ] **自動更新**: GitHub Actionsからのデプロイトリガー
+
+#### modules/gcp-compute/cloud-init.yaml
+```yaml
+#cloud-config
+package_update: true
+packages:
+  - docker.io
+  - docker-compose-plugin
+  - nginx
+  - certbot
+
+write_files:
+  - path: /home/ubuntu/quiz/docker-compose.yml
+    content: |
+      ${docker_compose_content}
+  
+  - path: /home/ubuntu/quiz/.env
+    content: |
+      # Populated from Secret Manager
+
+runcmd:
+  - usermod -aG docker ubuntu
+  - systemctl enable docker
+  - systemctl start docker
+  - |
+    # Secret Managerから環境変数を取得
+    gcloud secrets versions access latest --secret="quiz-env-prod" > /home/ubuntu/quiz/.env
+  - cd /home/ubuntu/quiz && docker compose up -d
+```
+
+### [TODO] インフラ監視・ログ管理
+
+#### Terraformによる監視設定
+- [ ] **Cloud Monitoring**: アラートポリシー定義
+- [ ] **Cloud Logging**: ログシンク設定
+- [ ] **UptimeRobot**: 外部監視設定（Terraform Provider使用）
+- [ ] **ダッシュボード**: Grafanaダッシュボード定義
+
+### [TODO] セキュリティ強化
+
+#### Secret Management
+- [ ] **Google Secret Manager**: 機密情報の管理
+- [ ] **IAMロール**: 最小権限の原則
+- [ ] **ネットワークセキュリティ**: Private Google Access
+- [ ] **監査ログ**: Cloud Audit Logs有効化
+
+### [TODO] 災害復旧（DR）
+
+#### バックアップ・リストア
+- [ ] **Terraformステート**: 定期バックアップ
+- [ ] **データベース**: 自動エクスポートスクリプト
+- [ ] **インフラ再構築**: `terraform apply`での完全復旧
+- [ ] **RPO/RTO目標**: 4時間以内の復旧
+
+## 📋 実装優先順位（IaC版）
+
+### Phase 1 (2週間): Terraform基盤
+1. Terraformプロジェクト構造作成
+2. GCPサービスアカウント設定
+3. 基本的なネットワークモジュール作成
+4. Terraform Cloudまたは GCSバックエンド設定
+
+### Phase 2 (2週間): コアインフラ
+1. Compute Engineモジュール開発
+2. Cloud SQL/Redisモジュール開発
+3. Cloud Storageモジュール開発
+4. 開発環境でのテスト
+
+### Phase 3 (1週間): CI/CD統合
+1. GitHub Actions Terraformワークフロー
+2. アプリケーションデプロイ自動化
+3. Secret Manager統合
+4. 環境別デプロイ設定
+
+### Phase 4 (1週間): 本番環境構築
+1. Cloudflareモジュール設定
+2. 本番環境へのTerraform apply
+3. 監視・アラート設定
+4. バックアップ・DR設定
+
+---
+
+## 🎯 IaC達成目標
+
+- **インフラ構築時間**: 15分以内（terraform applyのみ）
+- **環境複製**: 開発/ステージング/本番の完全同一構成
+- **変更管理**: GitOpsによる全変更の追跡
+- **災害復旧**: 1時間以内でのインフラ再構築
+- **コスト可視化**: Terraformによるコスト見積もり
+- **セキュリティ**: コード化されたセキュリティポリシー
+
+## 📝 備考
+
+- すべてのインフラリソースはTerraformで管理
+- 手動での変更は禁止（すべてコード経由）
+- PRベースでのインフラ変更レビュー
+- 定期的なTerraformとプロバイダーのアップデート
+- インフラコストの継続的な最適化

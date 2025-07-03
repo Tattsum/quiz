@@ -332,3 +332,17 @@ export default function HomePage() {
 4. **CI通過確認**: 全4つのジョブ（go-backend, nuxt-admin, nextjs-participant, integration）成功確認
 
 **予想結果**: 上記2点修正でCI完全通過可能
+
+## 💰 個人開発向け低コストインフラ構成タスク
+
+インフラ構成に関する詳細なTODOリストは以下のファイルに移動しました：
+
+📂 **[infra-TODO.txt](./infra-TODO.txt)**
+
+### 構成オプション：
+- **Option A: VPSベース構成** （月額約2,000円）
+- **Option B: GCP + Cloudflare構成** （月額約3,000円）
+
+詳細な実装手順、コスト内訳、タスクリストはinfra-TODO.txtを参照してください。
+
+
