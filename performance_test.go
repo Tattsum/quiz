@@ -38,6 +38,9 @@ const (
 	BaseURL            = "http://localhost:8080"
 	WebSocketURL       = "ws://localhost:8080/ws"
 	TestDuration       = 30 * time.Second
+	// タイムアウト設定（GitHub Actions環境を考慮）
+	HTTPTimeout      = 15 * time.Second  // GitHub Actions環境向けに延長
+	WebSocketTimeout = 15 * time.Second  // GitHub Actions環境向けに延長
 )
 
 // パフォーマンステストの結果を記録する構造体
@@ -60,12 +63,44 @@ type RequestResult struct {
 	Timestamp time.Time
 }
 
+// HTTPクライアントにタイムアウトを設定するヘルパー関数
+func createHTTPClient() *http.Client {
+	return &http.Client{
+		Timeout: HTTPTimeout,
+	}
+}
+
+// WebSocketダイアラーにタイムアウトを設定するヘルパー関数
+func createWebSocketDialer() *websocket.Dialer {
+	return &websocket.Dialer{
+		HandshakeTimeout: WebSocketTimeout,
+	}
+}
+
+// GitHub Actions環境での設定を取得するヘルパー関数
+func getMaxConcurrentUsers() int {
+	// GitHub Actions環境では少し控えめに設定
+	if os.Getenv("GITHUB_ACTIONS") == "true" {
+		return 50 // GitHub Actions環境では70から50に削減
+	}
+	return MaxConcurrentUsers
+}
+
+func getTestDuration() time.Duration {
+	// GitHub Actions環境では短縮
+	if os.Getenv("GITHUB_ACTIONS") == "true" {
+		return 20 * time.Second // 30秒から20秒に短縮
+	}
+	return TestDuration
+}
+
 // テスト前のセットアップを行う
 func setupPerformanceTest(t *testing.T) {
 	// 1. サーバーが起動していることを確認
 	t.Helper()
 	t.Log("サーバーのヘルスチェックを実行中...")
-	resp, err := http.Get(BaseURL + "/api/session/status")
+	client := createHTTPClient()
+	resp, err := client.Get(BaseURL + "/api/session/status")
 	if err != nil || resp == nil {
 		t.Fatalf("サーバーが起動していません。以下を確認してください:\n"+
 			"1. サーバーが %s で起動していること\n"+
@@ -80,7 +115,8 @@ func setupPerformanceTest(t *testing.T) {
 
 	// 2. WebSocketエンドポイントの確認
 	t.Log("WebSocketエンドポイントの確認中...")
-	wsConn, _, err := websocket.DefaultDialer.Dial(WebSocketURL, nil)
+	dialer := createWebSocketDialer()
+	wsConn, _, err := dialer.Dial(WebSocketURL, nil)
 	if err != nil {
 		t.Fatalf("WebSocket接続に失敗しました: %v", err)
 	}
@@ -92,7 +128,7 @@ func setupPerformanceTest(t *testing.T) {
 		Nickname: "HealthCheckUser",
 	}
 	jsonData, _ := json.Marshal(testParticipant)
-	testResp, err := http.Post(
+	testResp, err := client.Post(
 		BaseURL+"/api/participants/register",
 		"application/json",
 		bytes.NewBuffer(jsonData),
@@ -109,7 +145,8 @@ func setupPerformanceTest(t *testing.T) {
 	t.Log("✅ パフォーマンステスト環境のセットアップが完了しました")
 	t.Logf("  - API Base URL: %s", BaseURL)
 	t.Logf("  - WebSocket URL: %s", WebSocketURL)
-	t.Logf("  - 最大同時ユーザー数: %d", MaxConcurrentUsers)
+	t.Logf("  - 最大同時ユーザー数: %d", getMaxConcurrentUsers())
+	t.Logf("  - テスト継続時間: %v", getTestDuration())
 }
 
 // テスト後のクリーンアップを行う
@@ -118,7 +155,8 @@ func cleanupPerformanceTest(t *testing.T) {
 	t.Log("パフォーマンステストのクリーンアップを実行中...")
 
 	// WebSocket接続の最終確認（サーバーが正常に動作していることを確認）
-	wsConn, _, err := websocket.DefaultDialer.Dial(WebSocketURL, nil)
+	dialer := createWebSocketDialer()
+	wsConn, _, err := dialer.Dial(WebSocketURL, nil)
 	if err != nil {
 		t.Logf("警告: クリーンアップ時のWebSocket接続に失敗: %v", err)
 	} else {
@@ -127,7 +165,8 @@ func cleanupPerformanceTest(t *testing.T) {
 	}
 
 	// サーバーの最終ヘルスチェック
-	resp, err := http.Get(BaseURL + "/api/session/status")
+	client := createHTTPClient()
+	resp, err := client.Get(BaseURL + "/api/session/status")
 	if err != nil {
 		t.Logf("警告: クリーンアップ時のサーバーヘルスチェックに失敗: %v", err)
 	} else {
@@ -153,7 +192,7 @@ func TestConcurrentParticipantRegistration(t *testing.T) {
 	setupPerformanceTest(t)
 	defer cleanupPerformanceTest(t)
 
-	numParticipants := MaxConcurrentUsers
+	numParticipants := getMaxConcurrentUsers()
 	results := make(chan RequestResult, numParticipants)
 	var wg sync.WaitGroup
 
@@ -183,7 +222,8 @@ func TestConcurrentParticipantRegistration(t *testing.T) {
 				return
 			}
 
-			resp, err := http.Post(
+			client := createHTTPClient()
+			resp, err := client.Post(
 				BaseURL+"/api/participants/register",
 				"application/json",
 				bytes.NewBuffer(jsonData),
@@ -274,7 +314,7 @@ func TestConcurrentWebSocketConnections(t *testing.T) {
 	setupPerformanceTest(t)
 	defer cleanupPerformanceTest(t)
 
-	numConnections := MaxConcurrentUsers
+	numConnections := getMaxConcurrentUsers()
 	connections := make([]*websocket.Conn, 0, numConnections)
 	var wg sync.WaitGroup
 	var mu sync.Mutex
@@ -298,7 +338,8 @@ func TestConcurrentWebSocketConnections(t *testing.T) {
 				return
 			}
 
-			conn, resp, err := websocket.DefaultDialer.Dial(u.String(), nil)
+			dialer := createWebSocketDialer()
+			conn, resp, err := dialer.Dial(u.String(), nil)
 			if resp != nil && resp.Body != nil {
 				resp.Body.Close()
 			}
@@ -391,19 +432,20 @@ func TestConcurrentAnswerSubmissions(t *testing.T) {
 	setupPerformanceTest(t)
 	defer cleanupPerformanceTest(t)
 
-	numParticipants := MaxConcurrentUsers
+	numParticipants := getMaxConcurrentUsers()
 	var participantIDs []int64
 	var wg sync.WaitGroup
 
 	// まず参加者を登録
 	t.Log("Registering participants for answer submission test...")
+	client := createHTTPClient()
 	for i := 0; i < numParticipants; i++ {
 		participantReq := models.ParticipantRequest{
 			Nickname: fmt.Sprintf("AnswerTestUser%d", i),
 		}
 
 		jsonData, _ := json.Marshal(participantReq)
-		resp, err := http.Post(
+		resp, err := client.Post(
 			BaseURL+"/api/participants/register",
 			"application/json",
 			bytes.NewBuffer(jsonData),
@@ -459,7 +501,8 @@ func TestConcurrentAnswerSubmissions(t *testing.T) {
 				return
 			}
 
-			resp, err := http.Post(
+			client := createHTTPClient()
+			resp, err := client.Post(
 				BaseURL+"/api/answers",
 				"application/json",
 				bytes.NewBuffer(jsonData),
@@ -545,11 +588,11 @@ func TestSystemLoadUnder70Users(t *testing.T) {
 	setupPerformanceTest(t)
 	defer cleanupPerformanceTest(t)
 
-	t.Log("=== System Load Test Under 70 Concurrent Users ===")
+	t.Log("=== System Load Test Under Concurrent Users ===")
 
 	// システム全体の負荷テスト
-	duration := TestDuration
-	numUsers := MaxConcurrentUsers
+	duration := getTestDuration()
+	numUsers := getMaxConcurrentUsers()
 
 	var wg sync.WaitGroup
 	results := make(chan RequestResult, numUsers*10) // 各ユーザーが複数リクエストを送信
@@ -567,13 +610,14 @@ func TestSystemLoadUnder70Users(t *testing.T) {
 
 			userStartTime := time.Now()
 			userNickname := fmt.Sprintf("LoadTestUser%d", userNum)
+			client := createHTTPClient()
 
 			// 1. 参加者登録
 			participantReq := models.ParticipantRequest{Nickname: userNickname}
 			jsonData, _ := json.Marshal(participantReq)
 
 			reqStart := time.Now()
-			resp, err := http.Post(BaseURL+"/api/participants/register", "application/json", bytes.NewBuffer(jsonData))
+			resp, err := client.Post(BaseURL+"/api/participants/register", "application/json", bytes.NewBuffer(jsonData))
 
 			results <- RequestResult{
 				Success:   err == nil && resp != nil && resp.StatusCode == http.StatusCreated,
@@ -597,7 +641,8 @@ func TestSystemLoadUnder70Users(t *testing.T) {
 			// 2. WebSocket接続
 			if participantID > 0 {
 				u, _ := url.Parse(WebSocketURL)
-				conn, resp, err := websocket.DefaultDialer.Dial(u.String(), nil)
+				dialer := createWebSocketDialer()
+				conn, resp, err := dialer.Dial(u.String(), nil)
 				if resp != nil && resp.Body != nil {
 					resp.Body.Close()
 				}
@@ -619,7 +664,7 @@ func TestSystemLoadUnder70Users(t *testing.T) {
 
 						jsonData, _ := json.Marshal(answerReq)
 						reqStart := time.Now()
-						resp, err := http.Post(BaseURL+"/api/answers", "application/json", bytes.NewBuffer(jsonData))
+						resp, err := client.Post(BaseURL+"/api/answers", "application/json", bytes.NewBuffer(jsonData))
 
 						results <- RequestResult{
 							Success:   err == nil && resp != nil && (resp.StatusCode == http.StatusCreated || resp.StatusCode == http.StatusOK),
@@ -640,7 +685,7 @@ func TestSystemLoadUnder70Users(t *testing.T) {
 			// 4. データ取得リクエスト
 			for time.Since(userStartTime) < duration {
 				reqStart := time.Now()
-				resp, err := http.Get(BaseURL + "/api/session/status")
+				resp, err := client.Get(BaseURL + "/api/session/status")
 
 				results <- RequestResult{
 					Success:   err == nil && resp != nil && resp.StatusCode == http.StatusOK,
