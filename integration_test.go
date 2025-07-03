@@ -40,7 +40,7 @@ func TestMain(m *testing.M) {
 		if dbHost == "" {
 			dbHost = "localhost"
 		}
-		
+
 		dbPort := os.Getenv("DB_PORT")
 		if dbPort == "" {
 			// CI環境では5432、ローカル開発では5433をデフォルトとする
@@ -50,23 +50,23 @@ func TestMain(m *testing.M) {
 				dbPort = "5433"
 			}
 		}
-		
+
 		dbUser := os.Getenv("DB_USER")
 		if dbUser == "" {
 			dbUser = "quiz_user"
 		}
-		
+
 		dbPassword := os.Getenv("DB_PASSWORD")
 		if dbPassword == "" {
 			dbPassword = "quiz_password"
 		}
-		
+
 		dbName := os.Getenv("DB_NAME")
 		if dbName == "" {
 			dbName = "quiz_db_test"
 		}
-		
-		databaseURL := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable", 
+
+		databaseURL := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable",
 			dbUser, dbPassword, dbHost, dbPort, dbName)
 		os.Setenv("DATABASE_URL", databaseURL)
 		fmt.Printf("Generated DATABASE_URL: %s\n", databaseURL)
@@ -121,7 +121,7 @@ func setupTestDatabase() {
 
 	fmt.Printf("Setting up test database...\n")
 	fmt.Printf("Database URL: %s\n", os.Getenv("DATABASE_URL"))
-	
+
 	// データベース接続を確認
 	if err := testDB.Ping(); err != nil {
 		fmt.Printf("CRITICAL: Database connection failed in setupTestDatabase: %v\n", err)
@@ -215,7 +215,7 @@ func setupTestDatabase() {
 // createTablesIfNotExists creates database tables if they don't exist
 func createTablesIfNotExists() {
 	fmt.Printf("Creating database tables if they don't exist...\n")
-	
+
 	// Test database connection first
 	if err := testDB.Ping(); err != nil {
 		fmt.Printf("Database connection failed: %v\n", err)
@@ -276,11 +276,11 @@ func createTablesIfNotExists() {
 
 	// Create tables in order (dependencies matter)
 	tableOrder := []string{"administrators", "participants", "quizzes", "quiz_sessions", "answers"}
-	
+
 	for _, tableName := range tableOrder {
 		sql := tables[tableName]
 		fmt.Printf("Creating table %s...\n", tableName)
-		
+
 		_, err := testDB.Exec(sql)
 		if err != nil {
 			fmt.Printf("Failed to create table %s: %v\n", tableName, err)
@@ -293,7 +293,7 @@ func createTablesIfNotExists() {
 	fmt.Printf("Adding foreign key constraints...\n")
 	foreignKeys := []string{
 		"ALTER TABLE answers ADD CONSTRAINT IF NOT EXISTS fk_answers_participant FOREIGN KEY (participant_id) REFERENCES participants(id) ON DELETE CASCADE",
-		"ALTER TABLE answers ADD CONSTRAINT IF NOT EXISTS fk_answers_quiz FOREIGN KEY (quiz_id) REFERENCES quizzes(id) ON DELETE CASCADE", 
+		"ALTER TABLE answers ADD CONSTRAINT IF NOT EXISTS fk_answers_quiz FOREIGN KEY (quiz_id) REFERENCES quizzes(id) ON DELETE CASCADE",
 		"ALTER TABLE quiz_sessions ADD CONSTRAINT IF NOT EXISTS fk_quiz_sessions_quiz FOREIGN KEY (current_quiz_id) REFERENCES quizzes(id) ON DELETE SET NULL",
 	}
 
@@ -340,7 +340,7 @@ func createTablesIfNotExists() {
 	}
 
 	fmt.Printf("Tables found in database: %v\n", createdTables)
-	
+
 	// Check if all required tables exist
 	requiredTables := []string{"administrators", "participants", "quizzes", "quiz_sessions", "answers"}
 	for _, required := range requiredTables {
@@ -493,7 +493,7 @@ func TestIntegrationQuizFlow(t *testing.T) {
 	}
 
 	if !loginResp.Success || loginResp.Data == nil {
-		t.Fatalf("Login failed: success=%v, error=%+v, response_body=%s", 
+		t.Fatalf("Login failed: success=%v, error=%+v, response_body=%s",
 			loginResp.Success, loginResp.Error, w.Body.String())
 	}
 
@@ -676,7 +676,7 @@ func TestIntegrationSessionManagement(t *testing.T) {
 	}
 
 	if !loginResp.Success || loginResp.Data == nil {
-		t.Fatalf("Login failed: success=%v, error=%+v, response_body=%s", 
+		t.Fatalf("Login failed: success=%v, error=%+v, response_body=%s",
 			loginResp.Success, loginResp.Error, w.Body.String())
 	}
 
@@ -731,7 +731,7 @@ func TestIntegrationSessionManagement(t *testing.T) {
 	}
 
 	if !statusResp.Success || statusResp.Data == nil {
-		t.Fatalf("Get session status failed: success=%v, error=%+v, response_body=%s", 
+		t.Fatalf("Get session status failed: success=%v, error=%+v, response_body=%s",
 			statusResp.Success, statusResp.Error, w.Body.String())
 	}
 
@@ -739,7 +739,7 @@ func TestIntegrationSessionManagement(t *testing.T) {
 	if !ok {
 		t.Fatalf("Failed to parse status response data, got type %T", statusResp.Data)
 	}
-	
+
 	if statusData["is_accepting_answers"].(bool) != false {
 		t.Error("Expected answers to be disabled, but they are still enabled")
 	}
@@ -774,7 +774,7 @@ func TestIntegrationParticipantFlow(t *testing.T) {
 	}
 
 	if !participantResp.Success || participantResp.Data == nil {
-		t.Fatalf("Register participant failed: success=%v, error=%+v, response_body=%s", 
+		t.Fatalf("Register participant failed: success=%v, error=%+v, response_body=%s",
 			participantResp.Success, participantResp.Error, w.Body.String())
 	}
 
@@ -813,7 +813,7 @@ func TestIntegrationParticipantFlow(t *testing.T) {
 	}
 
 	if !answersResp.Success || answersResp.Data == nil {
-		t.Fatalf("Get participant answers failed: success=%v, error=%+v, response_body=%s", 
+		t.Fatalf("Get participant answers failed: success=%v, error=%+v, response_body=%s",
 			answersResp.Success, answersResp.Error, w.Body.String())
 	}
 
@@ -857,7 +857,7 @@ func TestIntegrationConcurrentAnswers(t *testing.T) {
 	}
 
 	if !loginResp.Success || loginResp.Data == nil {
-		t.Fatalf("Login failed: success=%v, error=%+v, response_body=%s", 
+		t.Fatalf("Login failed: success=%v, error=%+v, response_body=%s",
 			loginResp.Success, loginResp.Error, w.Body.String())
 	}
 
@@ -949,7 +949,7 @@ func TestIntegrationConcurrentAnswers(t *testing.T) {
 	}
 
 	if !resultsResp.Success || resultsResp.Data == nil {
-		t.Fatalf("Get results failed: success=%v, error=%+v, response_body=%s", 
+		t.Fatalf("Get results failed: success=%v, error=%+v, response_body=%s",
 			resultsResp.Success, resultsResp.Error, w.Body.String())
 	}
 
