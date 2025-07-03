@@ -152,22 +152,41 @@ func setupTestRouter() *gin.Engine {
 			admin.POST("/session/toggle-answers", handlers.ToggleAnswers)
 			admin.GET("/session/status", handlers.GetSessionStatus)
 
-			// Results and rankings
-			admin.GET("/results/:quiz_id", handlers.GetQuizResults)
+			// Results and rankings (admin)
+			admin.GET("/results/quiz/:id", handlers.GetQuizResults)
 			admin.GET("/ranking/overall", handlers.GetOverallRanking)
-			admin.GET("/ranking/quiz/:quiz_id", handlers.GetQuizRanking)
+			admin.GET("/ranking/quiz/:id", handlers.GetQuizRanking)
 		}
 
-		// Public routes
-		public := api.Group("/public")
+		// Session status (public)
+		api.GET("/session/status", handlers.GetSessionStatus)
+
+		// Participants (public)
+		participants := api.Group("/participants")
 		{
-			public.POST("/participants", handlers.RegisterParticipant)
-			public.GET("/participants/:id", handlers.GetParticipant)
-			public.GET("/participants/:id/answers", handlers.GetParticipantAnswers)
-			public.POST("/answers", handlers.SubmitAnswer)
-			public.PUT("/answers/:id", handlers.UpdateAnswer)
-			public.GET("/quiz/:id", handlers.GetQuiz)
-			public.GET("/session/status", handlers.GetSessionStatus)
+			participants.POST("/register", handlers.RegisterParticipant)
+			participants.GET("/:id", handlers.GetParticipant)
+			participants.GET("/:id/answers", handlers.GetParticipantAnswers)
+		}
+
+		// Answers (public)
+		answers := api.Group("/answers")
+		{
+			answers.POST("", handlers.SubmitAnswer)
+			answers.PUT("/:id", handlers.UpdateAnswer)
+		}
+
+		// Public results
+		results := api.Group("/results")
+		{
+			results.GET("/quiz/:id", handlers.GetQuizResults)
+		}
+
+		// Public rankings
+		ranking := api.Group("/ranking")
+		{
+			ranking.GET("/overall", handlers.GetOverallRanking)
+			ranking.GET("/quiz/:id", handlers.GetQuizRanking)
 		}
 	}
 
@@ -266,7 +285,7 @@ func TestIntegrationQuizFlow(t *testing.T) {
 	}
 	participantBody, _ := json.Marshal(participantReq)
 	w = httptest.NewRecorder()
-	req, _ = http.NewRequest("POST", "/api/public/participants", bytes.NewBuffer(participantBody))
+	req, _ = http.NewRequest("POST", "/api/participants/register", bytes.NewBuffer(participantBody))
 	req.Header.Set("Content-Type", "application/json")
 	testRouter.ServeHTTP(w, req)
 
@@ -298,7 +317,7 @@ func TestIntegrationQuizFlow(t *testing.T) {
 	}
 	answerBody, _ := json.Marshal(answerReq)
 	w = httptest.NewRecorder()
-	req, _ = http.NewRequest("POST", "/api/public/answers", bytes.NewBuffer(answerBody))
+	req, _ = http.NewRequest("POST", "/api/answers", bytes.NewBuffer(answerBody))
 	req.Header.Set("Content-Type", "application/json")
 	testRouter.ServeHTTP(w, req)
 
@@ -306,11 +325,9 @@ func TestIntegrationQuizFlow(t *testing.T) {
 		t.Fatalf("Submit answer failed: %d", w.Code)
 	}
 
-	// 6. 回答状況確認 (結果APIは一時的にスキップ)
-	// TODO: 結果APIのルーティング問題を修正後に有効化
-	/*
+	// 6. 回答状況確認
 	w = httptest.NewRecorder()
-	req, _ = http.NewRequest("GET", fmt.Sprintf("/api/public/results/quiz/%d", quizID), nil)
+	req, _ = http.NewRequest("GET", fmt.Sprintf("/api/results/quiz/%d", quizID), nil)
 	testRouter.ServeHTTP(w, req)
 
 	if w.Code != http.StatusOK {
@@ -332,7 +349,6 @@ func TestIntegrationQuizFlow(t *testing.T) {
 	if resultsData["correct_count"].(float64) != 1 {
 		t.Errorf("Expected 1 correct answer, got %v", resultsData["correct_count"])
 	}
-	*/
 
 	// 7. ランキング確認
 	w = httptest.NewRecorder()
@@ -427,7 +443,7 @@ func TestIntegrationParticipantFlow(t *testing.T) {
 	}
 	participantBody, _ := json.Marshal(participantReq)
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("POST", "/api/public/participants", bytes.NewBuffer(participantBody))
+	req, _ := http.NewRequest("POST", "/api/participants/register", bytes.NewBuffer(participantBody))
 	req.Header.Set("Content-Type", "application/json")
 	testRouter.ServeHTTP(w, req)
 
@@ -442,7 +458,7 @@ func TestIntegrationParticipantFlow(t *testing.T) {
 
 	// 参加者情報取得
 	w = httptest.NewRecorder()
-	req, _ = http.NewRequest("GET", fmt.Sprintf("/api/public/participants/%d", participantID), nil)
+	req, _ = http.NewRequest("GET", fmt.Sprintf("/api/participants/%d", participantID), nil)
 	testRouter.ServeHTTP(w, req)
 
 	if w.Code != http.StatusOK {
@@ -451,7 +467,7 @@ func TestIntegrationParticipantFlow(t *testing.T) {
 
 	// 参加者回答履歴取得
 	w = httptest.NewRecorder()
-	req, _ = http.NewRequest("GET", fmt.Sprintf("/api/public/participants/%d/answers", participantID), nil)
+	req, _ = http.NewRequest("GET", fmt.Sprintf("/api/participants/%d/answers", participantID), nil)
 	testRouter.ServeHTTP(w, req)
 
 	if w.Code != http.StatusOK {
@@ -511,7 +527,7 @@ func TestIntegrationConcurrentAnswers(t *testing.T) {
 			}
 			participantBody, _ := json.Marshal(participantReq)
 			w := httptest.NewRecorder()
-			req, _ := http.NewRequest("POST", "/api/public/participants", bytes.NewBuffer(participantBody))
+			req, _ := http.NewRequest("POST", "/api/participants/register", bytes.NewBuffer(participantBody))
 			req.Header.Set("Content-Type", "application/json")
 			testRouter.ServeHTTP(w, req)
 
@@ -529,7 +545,7 @@ func TestIntegrationConcurrentAnswers(t *testing.T) {
 				}
 				answerBody, _ := json.Marshal(answerReq)
 				w = httptest.NewRecorder()
-				req, _ = http.NewRequest("POST", "/api/public/answers", bytes.NewBuffer(answerBody))
+				req, _ = http.NewRequest("POST", "/api/answers", bytes.NewBuffer(answerBody))
 				req.Header.Set("Content-Type", "application/json")
 				testRouter.ServeHTTP(w, req)
 			}
@@ -551,19 +567,15 @@ func TestIntegrationConcurrentAnswers(t *testing.T) {
 		}
 	}
 
-	// 結果を確認 (結果APIは一時的にスキップ)
-	// TODO: 結果APIのルーティング問題を修正後に有効化
-	/*
+	// 結果を確認
 	w = httptest.NewRecorder()
-	req, _ = http.NewRequest("GET", "/api/public/results/quiz/1", nil)
+	req, _ = http.NewRequest("GET", "/api/results/quiz/1", nil)
 	testRouter.ServeHTTP(w, req)
 
 	if w.Code != http.StatusOK {
 		t.Fatalf("Get results after concurrent answers failed: %d", w.Code)
 	}
-	*/
 
-	/*
 	var resultsResp models.APIResponse
 	err := json.Unmarshal(w.Body.Bytes(), &resultsResp)
 	if err != nil {
@@ -576,5 +588,4 @@ func TestIntegrationConcurrentAnswers(t *testing.T) {
 	if totalAnswers < float64(numParticipants) {
 		t.Errorf("Expected at least %d answers, got %v", numParticipants, totalAnswers)
 	}
-	*/
 }
