@@ -27,16 +27,16 @@ const (
 	// FormatJPEG represents the JPEG image format
 	FormatJPEG = "jpeg"
 	// FormatPNG represents the PNG image format
-	FormatPNG  = "png"
+	FormatPNG = "png"
 	// FormatGIF represents the GIF image format
-	FormatGIF  = "gif"
+	FormatGIF = "gif"
 
 	// ContentTypeJPEG represents the MIME type for JPEG images
 	ContentTypeJPEG = "image/jpeg"
 	// ContentTypePNG represents the MIME type for PNG images
-	ContentTypePNG  = "image/png"
+	ContentTypePNG = "image/png"
 	// ContentTypeGIF represents the MIME type for GIF images
-	ContentTypeGIF  = "image/gif"
+	ContentTypeGIF = "image/gif"
 )
 
 // AllowedContentTypes defines the supported image content types

@@ -15,9 +15,9 @@ import (
 
 var (
 	// ErrInvalidToken is returned when a JWT token is invalid
-	ErrInvalidToken     = errors.New("invalid token")
+	ErrInvalidToken = errors.New("invalid token")
 	// ErrExpiredToken is returned when a JWT token has expired
-	ErrExpiredToken     = errors.New("token has expired")
+	ErrExpiredToken = errors.New("token has expired")
 	// ErrInvalidTokenType is returned when a JWT token has an invalid type
 	ErrInvalidTokenType = errors.New("invalid token type")
 )

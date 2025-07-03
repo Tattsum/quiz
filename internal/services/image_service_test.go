@@ -244,4 +244,3 @@ func createLargeTestJPEGImage() []byte {
 	jpeg.Encode(&buf, img, &jpeg.Options{Quality: 80})
 	return buf.Bytes()
 }
-
