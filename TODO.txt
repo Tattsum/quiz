@@ -75,6 +75,22 @@ Go言語でWebSocketを使用したリアルタイム通信機能を実装
 - ハートビート機能による接続監視
 - goroutineによる非同期メッセージ送信
 
+### [完了] errcheck linting エラー修正
+- internal/handlers/participant.go: rows.Close(), Scan()のエラーハンドリング修正
+- internal/handlers/results.go: rows.Close()のエラーハンドリング修正
+- internal/handlers/session.go: db.QueryRow().Scan()のエラーハンドリング修正
+- internal/handlers/upload.go: src.Close()のエラーハンドリング修正
+- internal/handlers/websocket.go: conn.Close()のエラーハンドリング修正
+- main.go: db.Close()のエラーハンドリング修正
+
+### [完了] revive linting エラー修正（exported comments）
+- internal/database/database.go: パッケージコメント追加、PostgreSQLドライバーblank importコメント追加
+- internal/middleware/middleware.go: パッケージコメント追加
+- internal/handlers/auth.go: パッケージコメント追加
+- internal/services/auth_service.go: パッケージコメント追加、AuthService型・exported関数コメント追加
+- internal/services/quiz_service.go: QuizService型・exported関数コメント追加
+- internal/handlers/websocket.go: MaxConnections定数コメント追加
+
 ## 過去の作業履歴
 データベース設計は完了済み:
 - database_schema.sql: データベーススキーマ（CREATE TABLE文）

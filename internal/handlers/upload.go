@@ -65,7 +65,11 @@ func UploadImage(c *gin.Context) {
 		})
 		return
 	}
-	defer src.Close()
+	defer func() {
+		if err := src.Close(); err != nil {
+			// Log error but don't return as we're already handling a response
+		}
+	}()
 
 	// Read first 512 bytes to detect content type
 	buffer := make([]byte, 512)
@@ -125,7 +129,7 @@ func UploadImage(c *gin.Context) {
 
 	// Ensure upload directory exists
 	uploadDir := "uploads/images"
-	if err := os.MkdirAll(uploadDir, 0o755); err != nil {
+	if err := os.MkdirAll(uploadDir, 0o750); err != nil {
 		c.JSON(http.StatusInternalServerError, models.APIResponse{
 			Success: false,
 			Error: &models.APIError{

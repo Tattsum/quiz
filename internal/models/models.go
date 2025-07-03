@@ -1,3 +1,4 @@
+// Package models contains data structures and domain models for the quiz application.
 package models
 
 import (

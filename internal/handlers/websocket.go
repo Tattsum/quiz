@@ -14,6 +14,7 @@ import (
 )
 
 const (
+	// MaxConnections is the maximum number of concurrent WebSocket connections allowed
 	MaxConnections = 70 // 最大接続数
 )
 
@@ -94,7 +95,11 @@ func WebSocketResults(c *gin.Context) {
 		log.Printf("WebSocket upgrade failed: %v", err)
 		return
 	}
-	defer conn.Close()
+	defer func() {
+		if err := conn.Close(); err != nil {
+			log.Printf("Failed to close WebSocket connection: %v", err)
+		}
+	}()
 
 	// Register connection
 	client := &ClientConnection{
@@ -307,7 +312,7 @@ func CleanupConnections() {
 
 			for conn, client := range connections {
 				if client.LastHeartbeat.Before(cutoff) {
-					conn.Close()
+					_ = conn.Close()
 					delete(connections, conn)
 				}
 			}

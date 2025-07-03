@@ -1,3 +1,4 @@
+// Package services provides business logic and service layer functionality.
 package services
 
 import (
@@ -12,16 +13,19 @@ import (
 	"github.com/Tattsum/quiz/internal/models"
 )
 
+// AuthService provides authentication related business logic
 type AuthService struct {
 	db *sql.DB
 }
 
+// NewAuthService creates a new AuthService instance
 func NewAuthService() *AuthService {
 	return &AuthService{
 		db: database.GetDB(),
 	}
 }
 
+// Login authenticates a user and returns a JWT token
 func (s *AuthService) Login(username, password string) (*models.LoginResponse, error) {
 	if username == "" || password == "" {
 		return nil, errors.New("username and password are required")
@@ -50,6 +54,7 @@ func (s *AuthService) Login(username, password string) (*models.LoginResponse, e
 	}, nil
 }
 
+// GetAdminByID retrieves an administrator by their ID
 func (s *AuthService) GetAdminByID(id int64) (*models.Administrator, error) {
 	if id <= 0 {
 		return nil, errors.New("invalid admin ID")

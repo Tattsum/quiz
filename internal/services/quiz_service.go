@@ -9,16 +9,19 @@ import (
 	"github.com/Tattsum/quiz/internal/models"
 )
 
+// QuizService provides quiz related business logic
 type QuizService struct {
 	db *sql.DB
 }
 
+// NewQuizService creates a new QuizService instance
 func NewQuizService() *QuizService {
 	return &QuizService{
 		db: database.GetDB(),
 	}
 }
 
+// CreateQuiz creates a new quiz in the database
 func (s *QuizService) CreateQuiz(req models.QuizRequest) (*models.Quiz, error) {
 	if err := s.validateQuizRequest(req); err != nil {
 		return nil, err
@@ -56,6 +59,7 @@ func (s *QuizService) CreateQuiz(req models.QuizRequest) (*models.Quiz, error) {
 	return &quiz, nil
 }
 
+// GetQuizByID retrieves a quiz by its ID
 func (s *QuizService) GetQuizByID(id int64) (*models.Quiz, error) {
 	if id <= 0 {
 		return nil, errors.New("invalid quiz ID")
@@ -89,6 +93,7 @@ func (s *QuizService) GetQuizByID(id int64) (*models.Quiz, error) {
 	return &quiz, nil
 }
 
+// GetPublicQuizByID retrieves a quiz by its ID without the correct answer
 func (s *QuizService) GetPublicQuizByID(id int64) (*models.QuizPublic, error) {
 	quiz, err := s.GetQuizByID(id)
 	if err != nil {
@@ -107,6 +112,7 @@ func (s *QuizService) GetPublicQuizByID(id int64) (*models.QuizPublic, error) {
 	}, nil
 }
 
+// UpdateQuiz updates an existing quiz in the database
 func (s *QuizService) UpdateQuiz(id int64, req models.QuizRequest) (*models.Quiz, error) {
 	if id <= 0 {
 		return nil, errors.New("invalid quiz ID")
@@ -147,6 +153,7 @@ func (s *QuizService) UpdateQuiz(id int64, req models.QuizRequest) (*models.Quiz
 	return s.GetQuizByID(id)
 }
 
+// DeleteQuiz deletes a quiz from the database
 func (s *QuizService) DeleteQuiz(id int64) error {
 	if id <= 0 {
 		return errors.New("invalid quiz ID")
@@ -165,6 +172,7 @@ func (s *QuizService) DeleteQuiz(id int64) error {
 	return nil
 }
 
+// GetQuizzes retrieves a paginated list of quizzes
 func (s *QuizService) GetQuizzes(page, limit int) ([]models.Quiz, int, error) {
 	if page <= 0 {
 		page = 1
@@ -191,7 +199,11 @@ func (s *QuizService) GetQuizzes(page, limit int) ([]models.Quiz, int, error) {
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to query quizzes: %w", err)
 	}
-	defer rows.Close()
+	defer func() {
+		if closeErr := rows.Close(); closeErr != nil {
+			fmt.Printf("Error closing rows: %v\n", closeErr)
+		}
+	}()
 
 	var quizzes []models.Quiz
 	for rows.Next() {

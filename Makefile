@@ -23,6 +23,10 @@ lint: ## Run golangci-lint v2
 	@echo "Running golangci-lint..."
 	@golangci-lint run --config .golangci.yml
 
+lint-fix: ## Run golangci-lint v2 with --fix
+	@echo "Running golangci-lint with --fix..."
+	@golangci-lint run --config .golangci.yml --fix
+
 test: ## Run tests
 	@echo "Running tests..."
 	@go test ./...

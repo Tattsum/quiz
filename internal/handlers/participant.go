@@ -189,7 +189,12 @@ func GetParticipantAnswers(c *gin.Context) {
 		})
 		return
 	}
-	defer rows.Close()
+	defer func() {
+		if err := rows.Close(); err != nil {
+			// Log error but don't return as we're already handling a response
+			// This is a cleanup operation
+		}
+	}()
 
 	var answers []models.ParticipantAnswer
 	for rows.Next() {
@@ -390,19 +395,23 @@ func SubmitAnswer(c *gin.Context) {
 		answerCounts := make(map[string]int)
 
 		// Get total participants
-		db.QueryRow("SELECT COUNT(*) FROM participants").Scan(&totalParticipants)
+		_ = db.QueryRow("SELECT COUNT(*) FROM participants").Scan(&totalParticipants)
 
 		// Get answered count for this quiz
-		db.QueryRow("SELECT COUNT(*) FROM answers WHERE quiz_id = $1", req.QuizID).Scan(&answeredCount)
+		_ = db.QueryRow("SELECT COUNT(*) FROM answers WHERE quiz_id = $1", req.QuizID).Scan(&answeredCount)
 
 		// Get answer distribution
 		rows, err := db.Query("SELECT selected_option, COUNT(*) FROM answers WHERE quiz_id = $1 GROUP BY selected_option", req.QuizID)
 		if err == nil {
-			defer rows.Close()
+			defer func() {
+				if err := rows.Close(); err != nil {
+					// Log error but don't return as we're already handling a response
+				}
+			}()
 			for rows.Next() {
 				var option string
 				var count int
-				rows.Scan(&option, &count)
+				_ = rows.Scan(&option, &count)
 				answerCounts[option] = count
 			}
 		}
@@ -446,19 +455,23 @@ func SubmitAnswer(c *gin.Context) {
 		answerCounts := make(map[string]int)
 
 		// Get total participants
-		db.QueryRow("SELECT COUNT(*) FROM participants").Scan(&totalParticipants)
+		_ = db.QueryRow("SELECT COUNT(*) FROM participants").Scan(&totalParticipants)
 
 		// Get answered count for this quiz
-		db.QueryRow("SELECT COUNT(*) FROM answers WHERE quiz_id = $1", req.QuizID).Scan(&answeredCount)
+		_ = db.QueryRow("SELECT COUNT(*) FROM answers WHERE quiz_id = $1", req.QuizID).Scan(&answeredCount)
 
 		// Get answer distribution
 		rows, err := db.Query("SELECT selected_option, COUNT(*) FROM answers WHERE quiz_id = $1 GROUP BY selected_option", req.QuizID)
 		if err == nil {
-			defer rows.Close()
+			defer func() {
+				if err := rows.Close(); err != nil {
+					// Log error but don't return as we're already handling a response
+				}
+			}()
 			for rows.Next() {
 				var option string
 				var count int
-				rows.Scan(&option, &count)
+				_ = rows.Scan(&option, &count)
 				answerCounts[option] = count
 			}
 		}

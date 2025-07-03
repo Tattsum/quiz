@@ -9,6 +9,8 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+const quizNotFoundError = "quiz not found"
+
 // GetQuizzes retrieves all quizzes with pagination
 func GetQuizzes(c *gin.Context) {
 	page, limit, _ := getPaginationParams(c)
@@ -55,7 +57,7 @@ func GetQuiz(c *gin.Context) {
 	quizService := services.NewQuizService()
 	quiz, err := quizService.GetQuizByID(id)
 	if err != nil {
-		if err.Error() == "quiz not found" {
+		if err.Error() == quizNotFoundError {
 			c.JSON(http.StatusNotFound, models.APIResponse{
 				Success: false,
 				Error: &models.APIError{
@@ -147,7 +149,7 @@ func UpdateQuiz(c *gin.Context) {
 	quizService := services.NewQuizService()
 	quiz, err := quizService.UpdateQuiz(id, req)
 	if err != nil {
-		if err.Error() == "quiz not found" {
+		if err.Error() == quizNotFoundError {
 			c.JSON(http.StatusNotFound, models.APIResponse{
 				Success: false,
 				Error: &models.APIError{
@@ -192,7 +194,7 @@ func DeleteQuiz(c *gin.Context) {
 	quizService := services.NewQuizService()
 	err = quizService.DeleteQuiz(id)
 	if err != nil {
-		if err.Error() == "quiz not found" {
+		if err.Error() == quizNotFoundError {
 			c.JSON(http.StatusNotFound, models.APIResponse{
 				Success: false,
 				Error: &models.APIError{
