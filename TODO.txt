@@ -91,6 +91,27 @@ Go言語でWebSocketを使用したリアルタイム通信機能を実装
 - internal/services/quiz_service.go: QuizService型・exported関数コメント追加
 - internal/handlers/websocket.go: MaxConnections定数コメント追加
 
+### [完了] JWT認証システムの実装
+- JWTアクセストークン・リフレッシュトークン機能
+- セキュアな管理者認証システム
+- Rate Limiting（API保護）
+- CORS設定
+- トークンブラックリスト機能
+
+#### 実装詳細
+- **JWT認証**: `internal/services/jwt_service.go` - アクセス/リフレッシュトークン生成・検証
+- **認証ミドルウェア**: `internal/middleware/middleware.go` - JWT認証、Rate Limiting、CORS
+- **認証ハンドラー**: `internal/handlers/auth.go` - ログイン・リフレッシュ・ログアウト
+- **パスワード暗号化**: bcryptによるセキュアなハッシュ化
+- **セキュリティ機能**: トークンブラックリスト、Rate Limiting（エンドポイント別）
+- **テスト**: JWT機能の包括的テスト実装
+
+#### APIエンドポイント
+- `POST /api/auth/login` - 管理者ログイン
+- `POST /api/auth/refresh` - トークンリフレッシュ  
+- `POST /api/admin/logout` - ログアウト
+- `GET /api/admin/verify` - トークン検証
+
 ### [進行中] スマートフォン向け参加者画面（Next.js 14）の実装
 - ニックネーム入力画面の作成
 - 回答画面（A/B/C/D の4つの大きなボタン）の作成
