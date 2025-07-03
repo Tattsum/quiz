@@ -29,7 +29,7 @@ var (
 func TestMain(m *testing.M) {
 	// テスト用の環境変数を設定
 	os.Setenv("ENV", "test")
-	
+
 	// DATABASE_URLが設定されていない場合のみデフォルト値を設定
 	if os.Getenv("DATABASE_URL") == "" {
 		// DB_PORTが設定されている場合はそれを使用、なければ5433をデフォルトとする
@@ -39,7 +39,7 @@ func TestMain(m *testing.M) {
 		}
 		os.Setenv("DATABASE_URL", fmt.Sprintf("postgres://quiz_user:quiz_password@localhost:%s/quiz_db_test?sslmode=disable", dbPort))
 	}
-	
+
 	os.Setenv("JWT_SECRET", "test_secret_key_for_testing_only")
 
 	// .envファイルを読み込み（テスト環境では無視される場合がある）
