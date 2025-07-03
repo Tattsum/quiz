@@ -17,7 +17,7 @@ jobs:
     
     services:
       postgres:
-        image: postgres:15
+        image: postgres:15@sha256:3156e13d976072c9083fe4c56455b8515dcf6fee23fd770e6ba4a3c6b8837337
         env:
           POSTGRES_DB: quiz_db_test
           POSTGRES_USER: quiz_user
@@ -32,7 +32,7 @@ jobs:
           --health-retries 5
       
       redis:
-        image: redis:7-alpine
+        image: redis:7-alpine@sha256:ee9e8748ace004102a267f7b8265dab2c618317df22507b89d16a8add7154273
         ports:
           - 6379:6379
         options: >-
@@ -42,15 +42,15 @@ jobs:
           --health-retries 3
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
 
     - name: Set up Go
-      uses: actions/setup-go@v4
+      uses: actions/setup-go@19bb51245e9c80abacb2e91cc42b33fa478b8639 # v4
       with:
         go-version: ${{ env.GO_VERSION }}
 
     - name: Cache Go modules
-      uses: actions/cache@v4
+      uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4
       with:
         path: |
           ~/.cache/go-build
@@ -143,7 +143,7 @@ jobs:
         go tool cover -func=coverage.out | tee coverage.txt
 
     - name: Upload coverage to artifacts
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
       with:
         name: go-coverage
         path: |
@@ -168,10 +168,10 @@ jobs:
         working-directory: ./admin-dashboard
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
 
     - name: Setup Node.js
-      uses: actions/setup-node@v4
+      uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
       with:
         node-version: ${{ env.NODE_VERSION }}
         cache: 'npm'
@@ -190,7 +190,7 @@ jobs:
       run: npm run test:coverage
 
     - name: Upload coverage
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
       with:
         name: nuxt-coverage
         path: admin-dashboard/coverage/
@@ -206,10 +206,10 @@ jobs:
         working-directory: ./participant-app
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
 
     - name: Setup Node.js
-      uses: actions/setup-node@v4
+      uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
       with:
         node-version: ${{ env.NODE_VERSION }}
         cache: 'npm'
@@ -228,7 +228,7 @@ jobs:
       run: npm run test:coverage
 
     - name: Upload coverage
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
       with:
         name: nextjs-coverage
         path: participant-app/coverage/
@@ -243,7 +243,7 @@ jobs:
     
     services:
       postgres:
-        image: postgres:15
+        image: postgres:15@sha256:3156e13d976072c9083fe4c56455b8515dcf6fee23fd770e6ba4a3c6b8837337
         env:
           POSTGRES_DB: quiz_db_test
           POSTGRES_USER: quiz_user
@@ -258,7 +258,7 @@ jobs:
           --health-retries 5
       
       redis:
-        image: redis:7-alpine
+        image: redis:7-alpine@sha256:ee9e8748ace004102a267f7b8265dab2c618317df22507b89d16a8add7154273
         ports:
           - 6379:6379
         options: >-
@@ -268,15 +268,15 @@ jobs:
           --health-retries 3
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
 
     - name: Set up Go
-      uses: actions/setup-go@v4
+      uses: actions/setup-go@19bb51245e9c80abacb2e91cc42b33fa478b8639 # v4
       with:
         go-version: ${{ env.GO_VERSION }}
 
     - name: Setup Node.js
-      uses: actions/setup-node@v4
+      uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
       with:
         node-version: ${{ env.NODE_VERSION }}
 
