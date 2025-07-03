@@ -39,8 +39,8 @@ const (
 	WebSocketURL       = "ws://localhost:8080/ws"
 	TestDuration       = 30 * time.Second
 	// タイムアウト設定（GitHub Actions環境を考慮）
-	HTTPTimeout      = 15 * time.Second  // GitHub Actions環境向けに延長
-	WebSocketTimeout = 15 * time.Second  // GitHub Actions環境向けに延長
+	HTTPTimeout      = 15 * time.Second // GitHub Actions環境向けに延長
+	WebSocketTimeout = 15 * time.Second // GitHub Actions環境向けに延長
 )
 
 // パフォーマンステストの結果を記録する構造体
