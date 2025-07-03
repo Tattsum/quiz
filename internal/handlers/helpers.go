@@ -26,7 +26,7 @@ func parseValidationErrors(err error) []models.ValidationError {
 }
 
 // getFieldName returns user-friendly field name
-func getFieldName(tag, field string) string {
+func getFieldName(_ /*tag*/, field string) string {
 	// Convert field names to user-friendly format
 	switch strings.ToLower(field) {
 	case "username":
@@ -88,11 +88,6 @@ func getPaginationParams(c *gin.Context) (int, int, error) {
 	return page, limit, nil
 }
 
-// getOffset calculates database offset from page and limit
-func getOffset(page, limit int) int {
-	return (page - 1) * limit
-}
-
 // convertQuizToPublic converts Quiz model to QuizPublic (without correct answer)
 func convertQuizToPublic(quiz models.Quiz) models.QuizPublic {
 	return models.QuizPublic{
@@ -113,9 +108,4 @@ func calculatePercentage(part, total int) float64 {
 		return 0
 	}
 	return float64(part) / float64(total) * 100
-}
-
-// isValidOption checks if the option is A, B, C, or D
-func isValidOption(option string) bool {
-	return option == "A" || option == "B" || option == "C" || option == "D"
 }

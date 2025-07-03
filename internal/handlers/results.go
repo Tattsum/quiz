@@ -130,9 +130,7 @@ func getQuizResultsData(db *sql.DB, quizID int64, isAcceptingAnswers *bool) (*mo
 		return nil, err
 	}
 	defer func() {
-		if err := rows.Close(); err != nil {
-			// Log error but don't return as we're already handling a response
-		}
+		_ = rows.Close() // Ignore close error in defer
 	}()
 
 	optionCounts := make(map[string]int)
@@ -237,9 +235,7 @@ func GetOverallRanking(c *gin.Context) {
 		return
 	}
 	defer func() {
-		if err := rows.Close(); err != nil {
-			// Log error but don't return as we're already handling a response
-		}
+		_ = rows.Close() // Ignore close error in defer
 	}()
 
 	var ranking []models.RankingEntry
@@ -343,9 +339,7 @@ func GetQuizRanking(c *gin.Context) {
 		return
 	}
 	defer func() {
-		if err := rows.Close(); err != nil {
-			// Log error but don't return as we're already handling a response
-		}
+		_ = rows.Close() // Ignore close error in defer
 	}()
 
 	var correctParticipants []models.CorrectParticipant

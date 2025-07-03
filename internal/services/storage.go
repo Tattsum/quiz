@@ -44,14 +44,13 @@ func (s *LocalStorageService) Store(imageUpload *models.ImageUpload, data []byte
 	}
 
 	filePath := filepath.Join(fullDir, imageUpload.Filename)
+	// #nosec G304 - imageUpload.Filename is validated by ImageService
 	file, err := os.Create(filePath)
 	if err != nil {
 		return fmt.Errorf("failed to create file: %w", err)
 	}
 	defer func() {
-		if err := file.Close(); err != nil {
-			// Log error silently
-		}
+		_ = file.Close()
 	}()
 
 	if _, err := file.Write(data); err != nil {
@@ -99,6 +98,7 @@ func (s *LocalStorageService) generateSubdirs(filename string) string {
 	return fmt.Sprintf("%s/%s", filename[:2], filename[2:4])
 }
 
+// CopyToStorage copies image data from source reader to local storage
 func (s *LocalStorageService) CopyToStorage(source io.Reader, imageUpload *models.ImageUpload) error {
 	if err := s.ensureUploadDirExists(); err != nil {
 		return fmt.Errorf("failed to create upload directory: %w", err)
@@ -112,14 +112,13 @@ func (s *LocalStorageService) CopyToStorage(source io.Reader, imageUpload *model
 	}
 
 	filePath := filepath.Join(fullDir, imageUpload.Filename)
+	// #nosec G304 - imageUpload.Filename is validated by ImageService
 	file, err := os.Create(filePath)
 	if err != nil {
 		return fmt.Errorf("failed to create file: %w", err)
 	}
 	defer func() {
-		if err := file.Close(); err != nil {
-			// Log error silently
-		}
+		_ = file.Close()
 	}()
 
 	size, err := io.Copy(file, source)

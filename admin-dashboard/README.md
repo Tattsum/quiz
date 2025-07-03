@@ -41,6 +41,8 @@ Nuxt3で構築されたリアルタイムクイズ大会の管理者向けダッ
 - **チャート**: Chart.js + Vue-ChartJS
 - **UI コンポーネント**: Headless UI
 - **通信**: WebSocket (リアルタイム) + REST API
+- **テスト**: Vitest + Vue Test Utils
+- **リント**: ESLint + Prettier
 
 ## セットアップ
 
@@ -130,6 +132,55 @@ admin-dashboard/
 4. **リアルタイム表示**: `/quiz-control/realtime` で参加者向け表示
 5. **ランキング確認**: `/ranking` で結果確認
 
+## 開発・テスト
+
+### テスト実行
+
+```bash
+# Vitestテスト実行
+npm run test
+
+# テスト（ウォッチモード）
+npm run test:watch
+
+# カバレッジ付きテスト
+npm run test:coverage
+```
+
+### リント・フォーマット
+
+```bash
+# ESLintチェック
+npm run lint
+
+# 自動修正
+npm run lint:fix
+```
+
+### ビルド確認
+
+```bash
+# プロダクションビルド
+npm run build
+
+# ビルド結果プレビュー
+npm run preview
+```
+
+## テスト状況
+
+- **総テスト数**: 14テスト
+- **成功率**: 100% ✅
+- **カバレッジ対象**: RealtimeChartコンポーネント
+- **Chart.js統合**: 適切なモックによるテスト
+
+### テスト内容
+- コンポーネントレンダリング
+- プロパティ受け渡し
+- WebSocket接続
+- データ表示ロジック
+- ユーザーインタラクション
+
 ## 特徴
 
 - **リアルタイム性**: WebSocketによる即座の状態同期
@@ -137,3 +188,4 @@ admin-dashboard/
 - **モバイル対応**: どのデバイスからでも操作可能
 - **データ可視化**: 円グラフやプログレスバーによる視覚的表示
 - **全画面モード**: プレゼンテーション向けの表示機能
+- **高品質**: 100%テスト成功、ESLint準拠

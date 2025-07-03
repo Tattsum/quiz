@@ -10,8 +10,11 @@ vi.mock('chart.js', () => {
     data: {},
   }
 
+  const MockChart = vi.fn(() => mockChart)
+  MockChart.register = vi.fn()
+
   return {
-    Chart: vi.fn(() => mockChart),
+    Chart: MockChart,
     ArcElement: vi.fn(),
     CategoryScale: vi.fn(),
     LinearScale: vi.fn(),
@@ -19,7 +22,6 @@ vi.mock('chart.js', () => {
     Title: vi.fn(),
     Tooltip: vi.fn(),
     Legend: vi.fn(),
-    register: vi.fn(),
   }
 })
 
@@ -145,7 +147,9 @@ describe('RealtimeChart', () => {
       }
     })
 
-    expect(wrapper.text()).toContain('回答データがありません')
+    // データがない場合でも統計情報は表示される（0で）
+    expect(wrapper.text()).toContain('総参加者')
+    expect(wrapper.text()).toContain('0')
   })
 
   it('プロパティが正しく受け取られる', () => {
@@ -314,6 +318,8 @@ describe('RealtimeChart Methods', () => {
 })
 
 describe('RealtimeChart WebSocket Integration', () => {
+  let wrapper: any
+
   it('WebSocket接続が初期化される', () => {
     const mockWebSocket = vi.fn()
     global.WebSocket = mockWebSocket

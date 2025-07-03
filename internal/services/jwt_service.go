@@ -14,11 +14,15 @@ import (
 )
 
 var (
+	// ErrInvalidToken is returned when a JWT token is invalid
 	ErrInvalidToken     = errors.New("invalid token")
+	// ErrExpiredToken is returned when a JWT token has expired
 	ErrExpiredToken     = errors.New("token has expired")
+	// ErrInvalidTokenType is returned when a JWT token has an invalid type
 	ErrInvalidTokenType = errors.New("invalid token type")
 )
 
+// JWTService provides JWT token generation and validation functionality
 type JWTService struct {
 	accessSecretKey   string
 	refreshSecretKey  string
@@ -26,6 +30,7 @@ type JWTService struct {
 	refreshExpiryTime time.Duration
 }
 
+// NewJWTService creates a new JWT service instance with configuration from environment variables
 func NewJWTService() *JWTService {
 	accessSecret := os.Getenv("JWT_ACCESS_SECRET")
 	if accessSecret == "" {
@@ -61,6 +66,7 @@ func NewJWTService() *JWTService {
 	}
 }
 
+// GenerateTokenPair generates access and refresh token pair for an administrator
 func (j *JWTService) GenerateTokenPair(admin *models.Administrator) (*models.LoginResponse, error) {
 	now := time.Now()
 	accessExpiresAt := now.Add(j.accessExpiryTime)
@@ -115,10 +121,12 @@ func (j *JWTService) GenerateTokenPair(admin *models.Administrator) (*models.Log
 	}, nil
 }
 
+// ValidateAccessToken validates an access token and returns its claims
 func (j *JWTService) ValidateAccessToken(tokenString string) (*models.JWTClaims, error) {
 	return j.validateToken(tokenString, j.accessSecretKey, "access")
 }
 
+// ValidateRefreshToken validates a refresh token and returns its claims
 func (j *JWTService) ValidateRefreshToken(tokenString string) (*models.JWTClaims, error) {
 	return j.validateToken(tokenString, j.refreshSecretKey, "refresh")
 }
@@ -149,6 +157,7 @@ func (j *JWTService) validateToken(tokenString, secretKey, expectedType string) 
 	return claims, nil
 }
 
+// RefreshTokens generates new token pair using a valid refresh token
 func (j *JWTService) RefreshTokens(refreshTokenString string, admin *models.Administrator) (*models.RefreshTokenResponse, error) {
 	claims, err := j.ValidateRefreshToken(refreshTokenString)
 	if err != nil {
@@ -171,6 +180,7 @@ func (j *JWTService) RefreshTokens(refreshTokenString string, admin *models.Admi
 	}, nil
 }
 
+// GenerateSecureRandomString generates a cryptographically secure random string
 func (j *JWTService) GenerateSecureRandomString(length int) (string, error) {
 	bytes := make([]byte, length)
 	if _, err := rand.Read(bytes); err != nil {
@@ -179,6 +189,7 @@ func (j *JWTService) GenerateSecureRandomString(length int) (string, error) {
 	return hex.EncodeToString(bytes), nil
 }
 
+// ExtractTokenFromHeader extracts JWT token from Authorization header
 func (j *JWTService) ExtractTokenFromHeader(authHeader string) string {
 	if len(authHeader) > 7 && authHeader[:7] == "Bearer " {
 		return authHeader[7:]

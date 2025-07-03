@@ -190,10 +190,7 @@ func GetParticipantAnswers(c *gin.Context) {
 		return
 	}
 	defer func() {
-		if err := rows.Close(); err != nil {
-			// Log error but don't return as we're already handling a response
-			// This is a cleanup operation
-		}
+		_ = rows.Close() // Ignore close error in defer
 	}()
 
 	var answers []models.ParticipantAnswer
@@ -404,9 +401,7 @@ func SubmitAnswer(c *gin.Context) {
 		rows, err := db.Query("SELECT selected_option, COUNT(*) FROM answers WHERE quiz_id = $1 GROUP BY selected_option", req.QuizID)
 		if err == nil {
 			defer func() {
-				if err := rows.Close(); err != nil {
-					// Log error but don't return as we're already handling a response
-				}
+				_ = rows.Close() // Ignore close error in defer
 			}()
 			for rows.Next() {
 				var option string
@@ -464,9 +459,7 @@ func SubmitAnswer(c *gin.Context) {
 		rows, err := db.Query("SELECT selected_option, COUNT(*) FROM answers WHERE quiz_id = $1 GROUP BY selected_option", req.QuizID)
 		if err == nil {
 			defer func() {
-				if err := rows.Close(); err != nil {
-					// Log error but don't return as we're already handling a response
-				}
+				_ = rows.Close() // Ignore close error in defer
 			}()
 			for rows.Next() {
 				var option string

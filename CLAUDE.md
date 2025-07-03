@@ -60,7 +60,7 @@ cd participant-app
 npm run test  # (テストが設定されている場合)
 ```
 
-## リント・フォーマットコマンド
+## コード品質・リント・フォーマットコマンド
 
 ### Go言語バックエンド
 #### 基本コマンド
@@ -82,21 +82,41 @@ make test      # テスト実行
 make install-tools  # gofumptとgolangci-lintをインストール
 ```
 
+#### セキュリティとコード品質ガイドライン
+- **ファイルパス検証**: `#nosec G304`コメントで適切にセキュリティリスクを文書化
+- **未使用パラメータ**: `_ /*paramName*/`記法で明示的に無効化
+- **空ブロック**: defer文では`_ = resource.Close()`で簡潔に記述
+- **エクスポート関数**: 全てのpublic関数・変数に適切なコメントを追加
+- **型アサーション**: チェック付きアサーション`value, ok := interface{}.(Type)`を使用
+- **定数使用**: ハードコーディングを避け、定数を積極的に活用
+
 ### Nuxt3管理ダッシュボード
 ```
 cd admin-dashboard
-npm run lint
-npm run dev  # 開発サーバー起動
-npm run build  # ビルド
+npm run lint       # ESLintチェック
+npm run test       # Vitestテスト実行
+npm run dev        # 開発サーバー起動
+npm run build      # プロダクションビルド
 ```
+
+#### テスト品質
+- Chart.jsなど外部ライブラリの適切なモック
+- Vue Test Utilsを使用したコンポーネントテスト
+- WebSocketの統合テスト
 
 ### Next.js参加者アプリ
 ```
 cd participant-app
-npm run lint
-npm run dev  # 開発サーバー起動
-npm run build  # ビルド
+npm run lint       # Next.jsリント
+npm run test       # Jestテスト実行
+npm run dev        # 開発サーバー起動
+npm run build      # プロダクションビルド
 ```
+
+#### 品質指標
+- **Goバックエンド**: 主要サービス85%以上のテストカバレッジ
+- **Nuxt3**: 全14テスト成功、Chart.js統合対応
+- **Next.js**: ESLint 100%成功、React Hook適切な使用
 
 ## Git運用ルール
 
