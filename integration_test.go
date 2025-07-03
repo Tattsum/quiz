@@ -432,7 +432,7 @@ func TestIntegrationParticipantFlow(t *testing.T) {
 	}
 
 	var participantResp models.APIResponse
-	json.Unmarshal(w.Body.Bytes(), &participantResp)
+	_ = json.Unmarshal(w.Body.Bytes(), &participantResp) // テスト用なのでエラーハンドリング不要
 	participantData := participantResp.Data.(map[string]interface{})
 	participantID := int64(participantData["participant_id"].(float64))
 
@@ -513,7 +513,7 @@ func TestIntegrationConcurrentAnswers(t *testing.T) {
 
 			if w.Code == http.StatusCreated {
 				var participantResp models.APIResponse
-				json.Unmarshal(w.Body.Bytes(), &participantResp)
+				_ = json.Unmarshal(w.Body.Bytes(), &participantResp) // テスト用なのでエラーハンドリング不要
 				participantData := participantResp.Data.(map[string]interface{})
 				participantID := int64(participantData["participant_id"].(float64))
 

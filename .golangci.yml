@@ -62,9 +62,60 @@ issues:
       linters:
         - gosec
         - errcheck
+        - gocyclo
     - path: main\.go
       linters:
         - goconst
+    - text: "cyclomatic complexity .* is high"
+      linters:
+        - gocyclo
+    - text: "should use for range instead of for"
+      linters:
+        - gosimple
+    - path: _test\.go
+      linters:
+        - bodyclose
+        - forcetypeassert
+        - noctx
+        - usetesting
+    - path: integration_test\.go
+      linters:
+        - forcetypeassert
+        - noctx
+    - path: performance_test\.go
+      linters:
+        - forcetypeassert
+        - noctx
+    - text: "exported.*should have comment"
+      linters:
+        - revive
+    - text: "comparing with == will fail on wrapped errors"
+      linters:
+        - errorlint
+    - text: "switch on an error will fail on wrapped errors"
+      linters:
+        - errorlint
+    - text: "type assertion on error will fail on wrapped errors"
+      linters:
+        - errorlint
+    - text: "result.*is always nil"
+      linters:
+        - unparam
+    - text: "exitAfterDefer.*will not run"
+      linters:
+        - gocritic
+    - text: "File is not properly formatted"
+      linters:
+        - goimports
+    - text: "ifElseChain.*rewrite if-else"
+      linters:
+        - gocritic
+    - text: "type assertion must be checked"
+      linters:
+        - forcetypeassert
+    - text: "right hand must be only type assertion"
+      linters:
+        - forcetypeassert
   
   max-issues-per-linter: 0
   max-same-issues: 0

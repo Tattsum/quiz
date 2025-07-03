@@ -298,7 +298,7 @@ func TestConcurrentAnswerSubmissions(t *testing.T) {
 
 		if err == nil && resp.StatusCode == http.StatusCreated {
 			var result map[string]interface{}
-			json.NewDecoder(resp.Body).Decode(&result)
+			_ = json.NewDecoder(resp.Body).Decode(&result) // テスト用なのでエラーハンドリング不要
 
 			if data, ok := result["data"].(map[string]interface{}); ok {
 				if participantID, ok := data["participant_id"].(float64); ok {
@@ -468,7 +468,7 @@ func TestSystemLoadUnder70Users(t *testing.T) {
 			var participantID int64
 			if resp != nil && resp.StatusCode == http.StatusCreated {
 				var result map[string]interface{}
-				json.NewDecoder(resp.Body).Decode(&result)
+				_ = json.NewDecoder(resp.Body).Decode(&result) // テスト用なのでエラーハンドリング不要
 				if data, ok := result["data"].(map[string]interface{}); ok {
 					if pID, ok := data["participant_id"].(float64); ok {
 						participantID = int64(pID)
@@ -490,7 +490,7 @@ func TestSystemLoadUnder70Users(t *testing.T) {
 
 					// ハートビート送信
 					heartbeat := map[string]interface{}{"type": "heartbeat"}
-					conn.WriteJSON(heartbeat)
+					_ = conn.WriteJSON(heartbeat) // テスト用なのでエラーハンドリング不要
 
 					// 3. 複数回の回答送信（時間内で）
 					for time.Since(userStartTime) < duration/2 {

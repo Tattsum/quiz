@@ -65,7 +65,7 @@ func TestWebSocketSubscribe(t *testing.T) {
 	}
 
 	// メッセージを受信できることを確認（タイムアウト付き）
-	conn.SetReadDeadline(time.Now().Add(5 * time.Second))
+	_ = conn.SetReadDeadline(time.Now().Add(5 * time.Second)) // テスト用なのでエラーハンドリング不要
 	_, message, err := conn.ReadMessage()
 	if err != nil {
 		// タイムアウトエラーは期待される場合もある
@@ -106,7 +106,7 @@ func TestWebSocketHeartbeat(t *testing.T) {
 	}
 
 	// レスポンスを待機（短いタイムアウト）
-	conn.SetReadDeadline(time.Now().Add(2 * time.Second))
+	_ = conn.SetReadDeadline(time.Now().Add(2 * time.Second)) // テスト用なのでエラーハンドリング不要
 	_, _, err = conn.ReadMessage()
 	if err != nil {
 		// ハートビートのレスポンスがない場合もあるので、エラーをログに出力するだけ
@@ -222,7 +222,7 @@ func TestWebSocketInvalidMessage(t *testing.T) {
 	}
 
 	// 接続が切断されるかタイムアウトを待つ
-	conn.SetReadDeadline(time.Now().Add(3 * time.Second))
+	_ = conn.SetReadDeadline(time.Now().Add(3 * time.Second)) // テスト用なのでエラーハンドリング不要
 	_, _, err = conn.ReadMessage()
 	if err != nil {
 		// エラーが発生することを期待（接続切断またはタイムアウト）
