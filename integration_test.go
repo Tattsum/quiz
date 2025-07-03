@@ -35,12 +35,43 @@ func TestMain(m *testing.M) {
 
 	// DATABASE_URLが設定されていない場合のみデフォルト値を設定
 	if os.Getenv("DATABASE_URL") == "" {
-		// DB_PORTが設定されている場合はそれを使用、なければ5433をデフォルトとする
+		// CI環境とローカル環境の判定
+		dbHost := os.Getenv("DB_HOST")
+		if dbHost == "" {
+			dbHost = "localhost"
+		}
+		
 		dbPort := os.Getenv("DB_PORT")
 		if dbPort == "" {
-			dbPort = "5433"
+			// CI環境では5432、ローカル開発では5433をデフォルトとする
+			if os.Getenv("GITHUB_ACTIONS") == "true" || os.Getenv("CI") == "true" {
+				dbPort = "5432"
+			} else {
+				dbPort = "5433"
+			}
 		}
-		os.Setenv("DATABASE_URL", fmt.Sprintf("postgres://quiz_user:quiz_password@localhost:%s/quiz_db_test?sslmode=disable", dbPort))
+		
+		dbUser := os.Getenv("DB_USER")
+		if dbUser == "" {
+			dbUser = "quiz_user"
+		}
+		
+		dbPassword := os.Getenv("DB_PASSWORD")
+		if dbPassword == "" {
+			dbPassword = "quiz_password"
+		}
+		
+		dbName := os.Getenv("DB_NAME")
+		if dbName == "" {
+			dbName = "quiz_db_test"
+		}
+		
+		databaseURL := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable", 
+			dbUser, dbPassword, dbHost, dbPort, dbName)
+		os.Setenv("DATABASE_URL", databaseURL)
+		fmt.Printf("Generated DATABASE_URL: %s\n", databaseURL)
+	} else {
+		fmt.Printf("Using existing DATABASE_URL: %s\n", os.Getenv("DATABASE_URL"))
 	}
 
 	os.Setenv("JWT_SECRET", "test_secret_key_for_testing_only")
@@ -88,23 +119,67 @@ func setupTestDatabase() {
 	dbMutex.Lock()
 	defer dbMutex.Unlock()
 
-	// テーブルをクリア
+	fmt.Printf("Setting up test database...\n")
+	fmt.Printf("Database URL: %s\n", os.Getenv("DATABASE_URL"))
+	
+	// データベース接続を確認
+	if err := testDB.Ping(); err != nil {
+		fmt.Printf("CRITICAL: Database connection failed in setupTestDatabase: %v\n", err)
+		return
+	}
+	fmt.Printf("Database connection verified in setupTestDatabase\n")
+
+	// スキーマを作成（CI環境ではテーブルが存在しない可能性があるため）
+	createTablesIfNotExists()
+
+	// テーブルが存在するか確認
+	fmt.Printf("Checking table existence before setup...\n")
 	tables := []string{"answers", "quiz_sessions", "participants", "quizzes", "administrators"}
 	for _, table := range tables {
-		_, _ = testDB.Exec(fmt.Sprintf("TRUNCATE TABLE %s RESTART IDENTITY CASCADE", table))
+		var exists bool
+		err := testDB.QueryRow("SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = $1)", table).Scan(&exists)
+		if err != nil {
+			fmt.Printf("Failed to check if table %s exists: %v\n", table, err)
+		} else if !exists {
+			fmt.Printf("ERROR: Table %s does not exist!\n", table)
+		} else {
+			fmt.Printf("✓ Table %s exists\n", table)
+		}
+	}
+
+	// テーブルをクリア
+	fmt.Printf("Clearing existing test data...\n")
+	for _, table := range tables {
+		result, err := testDB.Exec(fmt.Sprintf("TRUNCATE TABLE %s RESTART IDENTITY CASCADE", table))
+		if err != nil {
+			fmt.Printf("Failed to truncate table %s: %v\n", table, err)
+		} else {
+			fmt.Printf("✓ Table %s truncated\n", table)
+			if result != nil {
+				if rowsAffected, err := result.RowsAffected(); err == nil {
+					fmt.Printf("  Rows affected: %d\n", rowsAffected)
+				}
+			}
+		}
 	}
 
 	// テスト用管理者を作成
-	_, err := testDB.Exec(`
+	fmt.Printf("Creating test administrator...\n")
+	result, err := testDB.Exec(`
 		INSERT INTO administrators (username, password_hash, email, created_at, updated_at)
 		VALUES ('testadmin', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'test@example.com', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
 	`)
 	if err != nil {
 		fmt.Printf("Failed to create test admin: %v\n", err)
+	} else {
+		if rowsAffected, err := result.RowsAffected(); err == nil && rowsAffected > 0 {
+			fmt.Printf("✓ Test administrator created successfully\n")
+		}
 	}
 
 	// テスト用クイズを作成
-	_, err = testDB.Exec(`
+	fmt.Printf("Creating test quizzes...\n")
+	result, err = testDB.Exec(`
 		INSERT INTO quizzes (question_text, option_a, option_b, option_c, option_d, correct_answer, created_at, updated_at)
 		VALUES 
 		('What is 2+2?', '3', '4', '5', '6', 'B', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
@@ -112,10 +187,15 @@ func setupTestDatabase() {
 	`)
 	if err != nil {
 		fmt.Printf("Failed to create test quizzes: %v\n", err)
+	} else {
+		if rowsAffected, err := result.RowsAffected(); err == nil && rowsAffected > 0 {
+			fmt.Printf("✓ Test quizzes created successfully (%d rows)\n", rowsAffected)
+		}
 	}
 
 	// テスト用参加者を作成
-	_, err = testDB.Exec(`
+	fmt.Printf("Creating test participants...\n")
+	result, err = testDB.Exec(`
 		INSERT INTO participants (nickname, created_at)
 		VALUES 
 		('TestUser1', CURRENT_TIMESTAMP),
@@ -123,6 +203,159 @@ func setupTestDatabase() {
 	`)
 	if err != nil {
 		fmt.Printf("Failed to create test participants: %v\n", err)
+	} else {
+		if rowsAffected, err := result.RowsAffected(); err == nil && rowsAffected > 0 {
+			fmt.Printf("✓ Test participants created successfully (%d rows)\n", rowsAffected)
+		}
+	}
+
+	fmt.Printf("Test database setup completed\n")
+}
+
+// createTablesIfNotExists creates database tables if they don't exist
+func createTablesIfNotExists() {
+	fmt.Printf("Creating database tables if they don't exist...\n")
+	
+	// Test database connection first
+	if err := testDB.Ping(); err != nil {
+		fmt.Printf("Database connection failed: %v\n", err)
+		return
+	}
+	fmt.Printf("Database connection verified\n")
+
+	// Create tables one by one to identify issues more easily
+	tables := map[string]string{
+		"administrators": `
+			CREATE TABLE IF NOT EXISTS administrators (
+				id BIGSERIAL PRIMARY KEY,
+				username VARCHAR(50) NOT NULL UNIQUE,
+				password_hash VARCHAR(255) NOT NULL,
+				email VARCHAR(100) NOT NULL UNIQUE,
+				created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+				updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+			)`,
+		"participants": `
+			CREATE TABLE IF NOT EXISTS participants (
+				id BIGSERIAL PRIMARY KEY,
+				nickname VARCHAR(50) NOT NULL,
+				created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+			)`,
+		"quizzes": `
+			CREATE TABLE IF NOT EXISTS quizzes (
+				id BIGSERIAL PRIMARY KEY,
+				question_text TEXT NOT NULL,
+				option_a VARCHAR(255) NOT NULL,
+				option_b VARCHAR(255) NOT NULL,
+				option_c VARCHAR(255) NOT NULL,
+				option_d VARCHAR(255) NOT NULL,
+				correct_answer CHAR(1) NOT NULL CHECK (correct_answer IN ('A', 'B', 'C', 'D')),
+				image_url VARCHAR(500),
+				video_url VARCHAR(500),
+				created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+				updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+			)`,
+		"quiz_sessions": `
+			CREATE TABLE IF NOT EXISTS quiz_sessions (
+				id BIGSERIAL PRIMARY KEY,
+				current_quiz_id BIGINT,
+				is_accepting_answers BOOLEAN DEFAULT FALSE,
+				created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+				updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+			)`,
+		"answers": `
+			CREATE TABLE IF NOT EXISTS answers (
+				id BIGSERIAL PRIMARY KEY,
+				participant_id BIGINT NOT NULL,
+				quiz_id BIGINT NOT NULL,
+				selected_option CHAR(1) NOT NULL CHECK (selected_option IN ('A', 'B', 'C', 'D')),
+				is_correct BOOLEAN NOT NULL,
+				answered_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+				UNIQUE(participant_id, quiz_id)
+			)`,
+	}
+
+	// Create tables in order (dependencies matter)
+	tableOrder := []string{"administrators", "participants", "quizzes", "quiz_sessions", "answers"}
+	
+	for _, tableName := range tableOrder {
+		sql := tables[tableName]
+		fmt.Printf("Creating table %s...\n", tableName)
+		
+		_, err := testDB.Exec(sql)
+		if err != nil {
+			fmt.Printf("Failed to create table %s: %v\n", tableName, err)
+		} else {
+			fmt.Printf("Table %s created successfully\n", tableName)
+		}
+	}
+
+	// Add foreign key constraints after all tables are created
+	fmt.Printf("Adding foreign key constraints...\n")
+	foreignKeys := []string{
+		"ALTER TABLE answers ADD CONSTRAINT IF NOT EXISTS fk_answers_participant FOREIGN KEY (participant_id) REFERENCES participants(id) ON DELETE CASCADE",
+		"ALTER TABLE answers ADD CONSTRAINT IF NOT EXISTS fk_answers_quiz FOREIGN KEY (quiz_id) REFERENCES quizzes(id) ON DELETE CASCADE", 
+		"ALTER TABLE quiz_sessions ADD CONSTRAINT IF NOT EXISTS fk_quiz_sessions_quiz FOREIGN KEY (current_quiz_id) REFERENCES quizzes(id) ON DELETE SET NULL",
+	}
+
+	for _, fkSQL := range foreignKeys {
+		_, err := testDB.Exec(fkSQL)
+		if err != nil {
+			fmt.Printf("Failed to add foreign key constraint: %v\n", err)
+		}
+	}
+
+	// Create indexes
+	fmt.Printf("Creating indexes...\n")
+	indexes := []string{
+		"CREATE INDEX IF NOT EXISTS idx_answers_participant_id ON answers(participant_id)",
+		"CREATE INDEX IF NOT EXISTS idx_answers_quiz_id ON answers(quiz_id)",
+		"CREATE INDEX IF NOT EXISTS idx_answers_answered_at ON answers(answered_at)",
+		"CREATE INDEX IF NOT EXISTS idx_quiz_sessions_current_quiz_id ON quiz_sessions(current_quiz_id)",
+	}
+
+	for _, indexSQL := range indexes {
+		_, err := testDB.Exec(indexSQL)
+		if err != nil {
+			fmt.Printf("Failed to create index: %v\n", err)
+		}
+	}
+
+	// Verify tables were created
+	fmt.Printf("Verifying table creation...\n")
+	rows, err := testDB.Query("SELECT tablename FROM pg_tables WHERE schemaname = 'public'")
+	if err != nil {
+		fmt.Printf("Failed to query tables: %v\n", err)
+		return
+	}
+	defer rows.Close()
+
+	var createdTables []string
+	for rows.Next() {
+		var tableName string
+		if err := rows.Scan(&tableName); err != nil {
+			fmt.Printf("Failed to scan table name: %v\n", err)
+			continue
+		}
+		createdTables = append(createdTables, tableName)
+	}
+
+	fmt.Printf("Tables found in database: %v\n", createdTables)
+	
+	// Check if all required tables exist
+	requiredTables := []string{"administrators", "participants", "quizzes", "quiz_sessions", "answers"}
+	for _, required := range requiredTables {
+		found := false
+		for _, created := range createdTables {
+			if created == required {
+				found = true
+				break
+			}
+		}
+		if !found {
+			fmt.Printf("ERROR: Required table %s was not created!\n", required)
+		} else {
+			fmt.Printf("✓ Table %s exists\n", required)
+		}
 	}
 }
 
@@ -259,13 +492,18 @@ func TestIntegrationQuizFlow(t *testing.T) {
 		t.Fatalf("Failed to unmarshal login response: %v", err)
 	}
 
+	if !loginResp.Success || loginResp.Data == nil {
+		t.Fatalf("Login failed: success=%v, error=%+v, response_body=%s", 
+			loginResp.Success, loginResp.Error, w.Body.String())
+	}
+
 	loginData, ok := loginResp.Data.(map[string]interface{})
 	if !ok {
-		t.Fatal("Failed to parse login response data")
+		t.Fatalf("Failed to parse login response data, got type %T", loginResp.Data)
 	}
 	token, ok := loginData["access_token"].(string)
 	if !ok {
-		t.Fatal("Failed to parse access token")
+		t.Fatalf("Failed to parse access token from login data: %+v", loginData)
 	}
 
 	// 2. クイズ作成（並列実行対応）
@@ -418,6 +656,8 @@ func TestIntegrationSessionManagement(t *testing.T) {
 	testPrefix := fmt.Sprintf("SessionMgmt_%d_", time.Now().UnixNano())
 	defer cleanupTestData(t, testPrefix)
 
+	var err error
+
 	// 管理者ログイン
 	loginReq := models.LoginRequest{
 		Username: "testadmin",
@@ -430,9 +670,24 @@ func TestIntegrationSessionManagement(t *testing.T) {
 	testRouter.ServeHTTP(w, req)
 
 	var loginResp models.APIResponse
-	_ = json.Unmarshal(w.Body.Bytes(), &loginResp) // テスト用なのでエラーハンドリング不要
-	loginData := loginResp.Data.(map[string]interface{})
-	token := loginData["access_token"].(string)
+	err = json.Unmarshal(w.Body.Bytes(), &loginResp)
+	if err != nil {
+		t.Fatalf("Failed to unmarshal login response: %v", err)
+	}
+
+	if !loginResp.Success || loginResp.Data == nil {
+		t.Fatalf("Login failed: success=%v, error=%+v, response_body=%s", 
+			loginResp.Success, loginResp.Error, w.Body.String())
+	}
+
+	loginData, ok := loginResp.Data.(map[string]interface{})
+	if !ok {
+		t.Fatalf("Failed to parse login response data, got type %T", loginResp.Data)
+	}
+	token, ok := loginData["access_token"].(string)
+	if !ok {
+		t.Fatalf("Failed to parse access token from login data: %+v", loginData)
+	}
 
 	// セッション状況確認
 	w = httptest.NewRecorder()
@@ -470,12 +725,21 @@ func TestIntegrationSessionManagement(t *testing.T) {
 	}
 
 	var statusResp models.APIResponse
-	err := json.Unmarshal(w.Body.Bytes(), &statusResp)
+	err = json.Unmarshal(w.Body.Bytes(), &statusResp)
 	if err != nil {
 		t.Fatalf("Failed to unmarshal status response: %v", err)
 	}
 
-	statusData := statusResp.Data.(map[string]interface{})
+	if !statusResp.Success || statusResp.Data == nil {
+		t.Fatalf("Get session status failed: success=%v, error=%+v, response_body=%s", 
+			statusResp.Success, statusResp.Error, w.Body.String())
+	}
+
+	statusData, ok := statusResp.Data.(map[string]interface{})
+	if !ok {
+		t.Fatalf("Failed to parse status response data, got type %T", statusResp.Data)
+	}
+	
 	if statusData["is_accepting_answers"].(bool) != false {
 		t.Error("Expected answers to be disabled, but they are still enabled")
 	}
@@ -486,6 +750,8 @@ func TestIntegrationParticipantFlow(t *testing.T) {
 	t.Parallel()
 	testPrefix := fmt.Sprintf("ParticipantFlow_%d_", time.Now().UnixNano())
 	defer cleanupTestData(t, testPrefix)
+
+	var err error
 
 	// 参加者登録
 	participantReq := models.ParticipantRequest{
@@ -502,9 +768,25 @@ func TestIntegrationParticipantFlow(t *testing.T) {
 	}
 
 	var participantResp models.APIResponse
-	_ = json.Unmarshal(w.Body.Bytes(), &participantResp) // テスト用なのでエラーハンドリング不要
-	participantData := participantResp.Data.(map[string]interface{})
-	participantID := int64(participantData["participant_id"].(float64))
+	err = json.Unmarshal(w.Body.Bytes(), &participantResp)
+	if err != nil {
+		t.Fatalf("Failed to unmarshal participant response: %v", err)
+	}
+
+	if !participantResp.Success || participantResp.Data == nil {
+		t.Fatalf("Register participant failed: success=%v, error=%+v, response_body=%s", 
+			participantResp.Success, participantResp.Error, w.Body.String())
+	}
+
+	participantData, ok := participantResp.Data.(map[string]interface{})
+	if !ok {
+		t.Fatalf("Failed to parse participant response data, got type %T", participantResp.Data)
+	}
+	participantIDFloat, ok := participantData["participant_id"].(float64)
+	if !ok {
+		t.Fatalf("Failed to parse participant ID from data: %+v", participantData)
+	}
+	participantID := int64(participantIDFloat)
 
 	// 参加者情報取得
 	w = httptest.NewRecorder()
@@ -525,15 +807,27 @@ func TestIntegrationParticipantFlow(t *testing.T) {
 	}
 
 	var answersResp models.APIResponse
-	err := json.Unmarshal(w.Body.Bytes(), &answersResp)
+	err = json.Unmarshal(w.Body.Bytes(), &answersResp)
 	if err != nil {
 		t.Fatalf("Failed to unmarshal answers response: %v", err)
 	}
 
+	if !answersResp.Success || answersResp.Data == nil {
+		t.Fatalf("Get participant answers failed: success=%v, error=%+v, response_body=%s", 
+			answersResp.Success, answersResp.Error, w.Body.String())
+	}
+
 	// 初期状態では回答履歴は空
-	answersData := answersResp.Data.(map[string]interface{})
-	if answersData["total_answers"].(float64) != 0 {
-		t.Errorf("Expected 0 answers for new participant, got %v", answersData["total_answers"])
+	answersData, ok := answersResp.Data.(map[string]interface{})
+	if !ok {
+		t.Fatalf("Failed to parse answers response data, got type %T", answersResp.Data)
+	}
+	totalAnswersFloat, ok := answersData["total_answers"].(float64)
+	if !ok {
+		t.Fatalf("Failed to parse total_answers from data: %+v", answersData)
+	}
+	if totalAnswersFloat != 0 {
+		t.Errorf("Expected 0 answers for new participant, got %v", totalAnswersFloat)
 	}
 }
 
@@ -542,6 +836,8 @@ func TestIntegrationConcurrentAnswers(t *testing.T) {
 	t.Parallel()
 	testPrefix := fmt.Sprintf("ConcurrentAnswers_%d_", time.Now().UnixNano())
 	defer cleanupTestData(t, testPrefix)
+
+	var err error
 
 	// 管理者でセッション開始
 	loginReq := models.LoginRequest{
@@ -555,9 +851,24 @@ func TestIntegrationConcurrentAnswers(t *testing.T) {
 	testRouter.ServeHTTP(w, req)
 
 	var loginResp models.APIResponse
-	_ = json.Unmarshal(w.Body.Bytes(), &loginResp) // テスト用なのでエラーハンドリング不要
-	loginData := loginResp.Data.(map[string]interface{})
-	token := loginData["access_token"].(string)
+	err = json.Unmarshal(w.Body.Bytes(), &loginResp)
+	if err != nil {
+		t.Fatalf("Failed to unmarshal login response: %v", err)
+	}
+
+	if !loginResp.Success || loginResp.Data == nil {
+		t.Fatalf("Login failed: success=%v, error=%+v, response_body=%s", 
+			loginResp.Success, loginResp.Error, w.Body.String())
+	}
+
+	loginData, ok := loginResp.Data.(map[string]interface{})
+	if !ok {
+		t.Fatalf("Failed to parse login response data, got type %T", loginResp.Data)
+	}
+	token, ok := loginData["access_token"].(string)
+	if !ok {
+		t.Fatalf("Failed to parse access token from login data: %+v", loginData)
+	}
 
 	// 最初のクイズでセッション開始
 	sessionReq := models.SessionStartRequest{
@@ -632,16 +943,27 @@ func TestIntegrationConcurrentAnswers(t *testing.T) {
 	}
 
 	var resultsResp models.APIResponse
-	err := json.Unmarshal(w.Body.Bytes(), &resultsResp)
+	err = json.Unmarshal(w.Body.Bytes(), &resultsResp)
 	if err != nil {
 		t.Fatalf("Failed to unmarshal results response: %v", err)
 	}
 
-	resultsData := resultsResp.Data.(map[string]interface{})
-	totalAnswers := resultsData["total_answers"].(float64)
+	if !resultsResp.Success || resultsResp.Data == nil {
+		t.Fatalf("Get results failed: success=%v, error=%+v, response_body=%s", 
+			resultsResp.Success, resultsResp.Error, w.Body.String())
+	}
+
+	resultsData, ok := resultsResp.Data.(map[string]interface{})
+	if !ok {
+		t.Fatalf("Failed to parse results response data, got type %T", resultsResp.Data)
+	}
+	totalAnswersFloat, ok := resultsData["total_answers"].(float64)
+	if !ok {
+		t.Fatalf("Failed to parse total_answers from results data: %+v", resultsData)
+	}
 
 	// 並列テストでは他のテストの回答も含まれる可能性があるため、最小値のみチェック
-	if totalAnswers < float64(numParticipants) {
-		t.Logf("Expected at least %d answers, got %v (Note: May include answers from other parallel tests)", numParticipants, totalAnswers)
+	if totalAnswersFloat < float64(numParticipants) {
+		t.Logf("Expected at least %d answers, got %v (Note: May include answers from other parallel tests)", numParticipants, totalAnswersFloat)
 	}
 }

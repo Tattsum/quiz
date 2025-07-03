@@ -196,13 +196,30 @@ jobs:
       env:
         PGPASSWORD: quiz_password
       run: |
+        echo "Testing database connection..."
         psql -h localhost -U quiz_user -d quiz_db_test -c "SELECT 1" || exit 1
+        echo "Database connection successful"
+        
+        echo "Applying database schema..."
         if [ -f database_schema.sql ]; then
+          echo "Found database_schema.sql, applying..."
           psql -h localhost -U quiz_user -d quiz_db_test -f database_schema.sql
+          echo "Schema applied successfully"
+        else
+          echo "Warning: database_schema.sql not found"
         fi
+        
+        echo "Loading test data..."
         if [ -f test_data.sql ]; then
+          echo "Found test_data.sql, loading..."
           psql -h localhost -U quiz_user -d quiz_db_test -f test_data.sql
+          echo "Test data loaded successfully"
+        else
+          echo "Warning: test_data.sql not found"
         fi
+        
+        echo "Verifying table creation..."
+        psql -h localhost -U quiz_user -d quiz_db_test -c "\dt" | grep -E "(administrators|participants|quizzes|answers|quiz_sessions)" || echo "Warning: Some tables may not exist"
 
     - name: Run unit tests with coverage (parallel)
       env:
@@ -326,26 +343,34 @@ jobs:
         DB_USER: quiz_user
         DB_NAME: quiz_db_test
       run: |
-        # 高速データベースセットアップスクリプトを使用
-        if [ -f scripts/fast-db-setup.sh ]; then
-          ./scripts/fast-db-setup.sh
+        echo "Testing database connection..."
+        psql -h localhost -U quiz_user -d quiz_db_test -c "SELECT 1" || exit 1
+        echo "Database connection successful"
+        
+        echo "Applying database schema..."
+        if [ -f database_schema.sql ]; then
+          echo "Found database_schema.sql, applying..."
+          psql -h localhost -U quiz_user -d quiz_db_test -f database_schema.sql
+          echo "Schema applied successfully"
         else
-          # フォールバック：従来の方法
-          echo "Fast setup script not found, using fallback method..."
-          psql -h localhost -U quiz_user -d quiz_db_test -c "SELECT 1" || exit 1
-          
-          if [ -f database_schema.sql ]; then
-            if ! psql -h localhost -U quiz_user -d quiz_db_test -c "\dt" | grep -q "administrators"; then
-              psql -h localhost -U quiz_user -d quiz_db_test -f database_schema.sql
-            fi
-          fi
-          
-          if [ -f test_data_light.sql ]; then
-            psql -h localhost -U quiz_user -d quiz_db_test -f test_data_light.sql
-          elif [ -f test_data.sql ]; then
-            psql -h localhost -U quiz_user -d quiz_db_test -f test_data.sql
-          fi
+          echo "Warning: database_schema.sql not found"
         fi
+        
+        echo "Loading test data..."
+        if [ -f test_data_light.sql ]; then
+          echo "Found test_data_light.sql, loading..."
+          psql -h localhost -U quiz_user -d quiz_db_test -f test_data_light.sql
+          echo "Light test data loaded successfully"
+        elif [ -f test_data.sql ]; then
+          echo "Found test_data.sql, loading..."
+          psql -h localhost -U quiz_user -d quiz_db_test -f test_data.sql
+          echo "Test data loaded successfully"
+        else
+          echo "Warning: No test data files found"
+        fi
+        
+        echo "Verifying table creation..."
+        psql -h localhost -U quiz_user -d quiz_db_test -c "\dt" | grep -E "(administrators|participants|quizzes|answers|quiz_sessions)" || echo "Warning: Some tables may not exist"
 
     - name: Run integration tests (parallel)
       env:
@@ -723,24 +748,34 @@ jobs:
         DB_USER: quiz_user
         DB_NAME: quiz_db_test
       run: |
-        # 高速データベースセットアップスクリプトを使用
-        if [ -f scripts/fast-db-setup.sh ]; then
-          ./scripts/fast-db-setup.sh
+        echo "Testing database connection..."
+        psql -h localhost -U quiz_user -d quiz_db_test -c "SELECT 1" || exit 1
+        echo "Database connection successful"
+        
+        echo "Applying database schema..."
+        if [ -f database_schema.sql ]; then
+          echo "Found database_schema.sql, applying..."
+          psql -h localhost -U quiz_user -d quiz_db_test -f database_schema.sql
+          echo "Schema applied successfully"
         else
-          # フォールバック：軽量セットアップ
-          if [ -f database_schema.sql ]; then
-            if ! psql -h localhost -U quiz_user -d quiz_db_test -c "\dt" | grep -q "administrators"; then
-              psql -h localhost -U quiz_user -d quiz_db_test -f database_schema.sql
-            fi
-          fi
-          
-          # 軽量テストデータを優先
-          if [ -f test_data_light.sql ]; then
-            psql -h localhost -U quiz_user -d quiz_db_test -f test_data_light.sql
-          elif [ -f test_data.sql ]; then
-            psql -h localhost -U quiz_user -d quiz_db_test -f test_data.sql
-          fi
+          echo "Warning: database_schema.sql not found"
         fi
+        
+        echo "Loading test data..."
+        if [ -f test_data_light.sql ]; then
+          echo "Found test_data_light.sql, loading..."
+          psql -h localhost -U quiz_user -d quiz_db_test -f test_data_light.sql
+          echo "Light test data loaded successfully"
+        elif [ -f test_data.sql ]; then
+          echo "Found test_data.sql, loading..."
+          psql -h localhost -U quiz_user -d quiz_db_test -f test_data.sql
+          echo "Test data loaded successfully"
+        else
+          echo "Warning: No test data files found"
+        fi
+        
+        echo "Verifying table creation..."
+        psql -h localhost -U quiz_user -d quiz_db_test -c "\dt" | grep -E "(administrators|participants|quizzes|answers|quiz_sessions)" || echo "Warning: Some tables may not exist"
 
     - name: Run quick end-to-end verification
       env:
