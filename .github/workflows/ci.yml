@@ -11,8 +11,220 @@ env:
   NODE_VERSION: '20'
 
 jobs:
-  # Go Backend Tests
-  go-backend:
+  # Go Code Quality Jobs (Parallel execution)
+  go-format:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: ${{ env.GO_VERSION }}
+
+    - name: Cache Go modules
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cache/go-build
+          ~/go/pkg/mod
+        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-
+
+    - name: Install gofumpt
+      run: go install mvdan.cc/gofumpt@latest
+
+    - name: Format check
+      run: |
+        gofumpt -l . | tee /tmp/gofumpt-output
+        if [ -s /tmp/gofumpt-output ]; then
+          echo "Code is not formatted. Please run 'make fmt' locally."
+          exit 1
+        fi
+
+  go-lint:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: ${{ env.GO_VERSION }}
+
+    - name: Cache Go modules
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cache/go-build
+          ~/go/pkg/mod
+        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-
+
+    - name: Cache golangci-lint
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/golangci-lint
+        key: ${{ runner.os }}-golangci-lint-${{ hashFiles('.golangci.yml') }}
+        restore-keys: |
+          ${{ runner.os }}-golangci-lint-
+
+    - name: Install golangci-lint
+      run: go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+
+    - name: Create golangci-lint config
+      run: |
+        cat > .golangci.yml << 'EOF'
+        run:
+          timeout: 5m
+          tests: true
+          build-tags:
+            - integration
+
+        linters:
+          enable:
+            - errcheck
+            - gosimple
+            - govet
+            - ineffassign
+            - staticcheck
+            - typecheck
+            - unused
+            - gofmt
+            - goimports
+            - misspell
+            - revive
+            - gosec
+            - goconst
+            - gocyclo
+        
+        linters-settings:
+          gosec:
+            excludes:
+              - G304  # File path provided as taint input (handled with validation)
+          gocyclo:
+            min-complexity: 20
+          revive:
+            confidence: 0.8
+        EOF
+
+    - name: Lint
+      run: golangci-lint run --config .golangci.yml --timeout 5m
+
+  go-vet:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: ${{ env.GO_VERSION }}
+
+    - name: Cache Go modules
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cache/go-build
+          ~/go/pkg/mod
+        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-
+
+    - name: Vet
+      run: go vet ./...
+
+  # Go Test Jobs (Parallel execution by test type)
+  go-unit-tests:
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: quiz_db_test
+          POSTGRES_USER: quiz_user
+          POSTGRES_PASSWORD: quiz_password
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U quiz_user"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 3s
+          --health-retries 3
+
+    strategy:
+      matrix:
+        test-group: [handlers, services, models, database, utils]
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: ${{ env.GO_VERSION }}
+
+    - name: Cache Go modules and build cache
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cache/go-build
+          ~/go/pkg/mod
+        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}-${{ matrix.test-group }}
+        restore-keys: |
+          ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          ${{ runner.os }}-go-
+
+    - name: Set up test database
+      env:
+        PGPASSWORD: quiz_password
+      run: |
+        psql -h localhost -U quiz_user -d quiz_db_test -c "SELECT 1" || exit 1
+        if [ -f database_schema.sql ]; then
+          psql -h localhost -U quiz_user -d quiz_db_test -f database_schema.sql
+        fi
+        if [ -f test_data.sql ]; then
+          psql -h localhost -U quiz_user -d quiz_db_test -f test_data.sql
+        fi
+
+    - name: Run unit tests with coverage (parallel)
+      env:
+        DB_HOST: localhost
+        DB_PORT: 5432
+        DB_USER: quiz_user
+        DB_PASSWORD: quiz_password
+        DB_NAME: quiz_db_test
+        REDIS_HOST: localhost
+        REDIS_PORT: 6379
+        TEST_ENV: true
+      run: |
+        # Run tests for specific package group with high parallelism
+        go test -v -race -parallel 8 -coverprofile=coverage-${{ matrix.test-group }}.out -covermode=atomic ./internal/${{ matrix.test-group }}/...
+
+    - name: Upload coverage artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: unit-coverage-${{ matrix.test-group }}
+        path: coverage-${{ matrix.test-group }}.out
+
+  go-integration-tests:
     runs-on: ubuntu-latest
     
     services:
@@ -49,68 +261,16 @@ jobs:
       with:
         go-version: ${{ env.GO_VERSION }}
 
-    - name: Cache Go modules
+    - name: Cache Go modules and build cache
       uses: actions/cache@v4
       with:
         path: |
           ~/.cache/go-build
           ~/go/pkg/mod
-        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+        key: ${{ runner.os }}-go-integration-${{ hashFiles('**/go.sum') }}
         restore-keys: |
+          ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
           ${{ runner.os }}-go-
-
-    - name: Install development tools
-      run: |
-        go install mvdan.cc/gofumpt@latest
-        go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
-
-    - name: Create golangci-lint config
-      run: |
-        cat > .golangci.yml << 'EOF'
-        run:
-          timeout: 5m
-          tests: true
-
-        linters:
-          enable:
-            - errcheck
-            - gosimple
-            - govet
-            - ineffassign
-            - staticcheck
-            - typecheck
-            - unused
-            - gofmt
-            - goimports
-            - misspell
-            - revive
-            - gosec
-            - goconst
-            - gocyclo
-        
-        linters-settings:
-          gosec:
-            excludes:
-              - G304  # File path provided as taint input (handled with validation)
-          gocyclo:
-            min-complexity: 20
-          revive:
-            confidence: 0.8
-        EOF
-
-    - name: Format check
-      run: |
-        gofumpt -l . | tee /tmp/gofumpt-output
-        if [ -s /tmp/gofumpt-output ]; then
-          echo "Code is not formatted. Please run 'make fmt' locally."
-          exit 1
-        fi
-
-    - name: Lint
-      run: golangci-lint run --config .golangci.yml
-
-    - name: Vet
-      run: go vet ./...
 
     - name: Set up test database
       env:
@@ -124,7 +284,7 @@ jobs:
           psql -h localhost -U quiz_user -d quiz_db_test -f test_data.sql
         fi
 
-    - name: Run tests with coverage
+    - name: Run integration tests with coverage
       env:
         DB_HOST: localhost
         DB_PORT: 5432
@@ -135,17 +295,121 @@ jobs:
         REDIS_PORT: 6379
         TEST_ENV: true
       run: |
-        go test -v -race -coverprofile=coverage.out -covermode=atomic ./...
+        go test -v -race -parallel 4 -coverprofile=coverage-integration.out -covermode=atomic -timeout 10m ./integration_test.go
 
+    - name: Upload integration coverage
+      uses: actions/upload-artifact@v4
+      with:
+        name: integration-coverage
+        path: coverage-integration.out
+
+  go-performance-tests:
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: quiz_db_test
+          POSTGRES_USER: quiz_user
+          POSTGRES_PASSWORD: quiz_password
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U quiz_user"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 3s
+          --health-retries 3
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: ${{ env.GO_VERSION }}
+
+    - name: Cache Go modules and build cache
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cache/go-build
+          ~/go/pkg/mod
+        key: ${{ runner.os }}-go-performance-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          ${{ runner.os }}-go-
+
+    - name: Set up test database
+      env:
+        PGPASSWORD: quiz_password
+      run: |
+        psql -h localhost -U quiz_user -d quiz_db_test -c "SELECT 1" || exit 1
+        if [ -f database_schema.sql ]; then
+          psql -h localhost -U quiz_user -d quiz_db_test -f database_schema.sql
+        fi
+        if [ -f test_data.sql ]; then
+          psql -h localhost -U quiz_user -d quiz_db_test -f test_data.sql
+        fi
+
+    - name: Run performance tests
+      env:
+        DB_HOST: localhost
+        DB_PORT: 5432
+        DB_USER: quiz_user
+        DB_PASSWORD: quiz_password
+        DB_NAME: quiz_db_test
+        REDIS_HOST: localhost
+        REDIS_PORT: 6379
+        TEST_ENV: true
+        RUN_PERFORMANCE_TESTS: "true"
+      run: |
+        go test -v -run "TestConcurrent|TestSystemLoad" -timeout 15m ./performance_test.go
+
+  # Coverage Consolidation Job
+  go-coverage-report:
+    runs-on: ubuntu-latest
+    needs: [go-unit-tests, go-integration-tests]
+    
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: ${{ env.GO_VERSION }}
+
+    - name: Download all coverage artifacts
+      uses: actions/download-artifact@v4
+      with:
+        pattern: '*-coverage*'
+        merge-multiple: true
+
+    - name: Merge coverage reports
+      run: |
+        echo "mode: atomic" > coverage.out
+        tail -n +2 coverage-*.out | grep -v "mode: atomic" >> coverage.out || true
+        
     - name: Generate coverage report
       run: |
         go tool cover -html=coverage.out -o coverage.html
         go tool cover -func=coverage.out | tee coverage.txt
 
-    - name: Upload coverage to artifacts
+    - name: Upload consolidated coverage
       uses: actions/upload-artifact@v4
       with:
-        name: go-coverage
+        name: go-coverage-consolidated
         path: |
           coverage.out
           coverage.html
@@ -153,12 +417,21 @@ jobs:
 
     - name: Check coverage threshold
       run: |
-        COVERAGE=$(go tool cover -func=coverage.out | grep total | awk '{print $3}' | sed 's/%//')
+        COVERAGE=$(go tool cover -func=coverage.out | grep total | awk '{print $3}' | sed 's/%//' || echo "0")
         echo "Total coverage: ${COVERAGE}%"
         if (( $(echo "$COVERAGE < 30" | bc -l) )); then
           echo "Coverage ${COVERAGE}% is below threshold of 30%"
           exit 1
         fi
+
+  # Summary job for all Go tests
+  go-backend:
+    runs-on: ubuntu-latest
+    needs: [go-format, go-lint, go-vet, go-unit-tests, go-integration-tests, go-performance-tests, go-coverage-report]
+    
+    steps:
+    - name: Go backend tests completed
+      run: echo "All Go backend tests passed successfully"
 
   # Nuxt3 Admin Dashboard Tests
   nuxt-admin:

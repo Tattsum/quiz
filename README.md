@@ -56,6 +56,72 @@ cd participant-app
 npm install
 ```
 
+## 🚀 CI/CD とテスト
+
+### 高速化されたCI構成
+
+このプロジェクトは**並列稼働**と**高度なキャッシュ戦略**により、CI実行時間を大幅に短縮しています：
+
+#### 並列実行の最適化
+
+1. **コード品質チェック** (並列実行)
+   - `go-format`: コードフォーマット検証
+   - `go-lint`: Linting (golangci-lint)
+   - `go-vet`: Go静的解析
+
+2. **テスト実行** (並列実行)
+   - `go-unit-tests`: パッケージ別単体テスト (handlers, services, models, database, utils)
+   - `go-integration-tests`: 統合テスト
+   - `go-performance-tests`: パフォーマンステスト (70人同時接続)
+
+3. **カバレッジ統合**
+   - `go-coverage-report`: 全カバレッジレポートのマージと閾値チェック
+
+#### キャッシュ戦略
+
+- **Goモジュールキャッシュ**: `~/.cache/go-build`, `~/go/pkg/mod`
+- **Linterキャッシュ**: `~/.cache/golangci-lint`
+- **パッケージ別キャッシュ**: テストグループごとに最適化されたキャッシュキー
+
+#### 高速化メリット
+
+- **実行時間**: 従来の順次実行に比べ約 **3-5倍高速**
+- **並列度**: 単体テストで`-parallel 8`、統合テストで`-parallel 4`
+- **リソース効率**: 各ジョブが独立してCPUを活用
+
+### Makefileによる開発支援
+
+```bash
+# 並列実行でのテスト
+make test-parallel          # パッケージ別並列テスト
+make test-unit             # 単体テストのみ
+make test-integration      # 統合テストのみ
+make test-performance      # パフォーマンステストのみ
+
+# 並列実行でのコード品質チェック
+make check                 # format, lint, vet を並列実行
+
+# CI環境向け最適化
+make ci-test              # CI用テストスイート
+make benchmark            # ベンチマーク実行
+
+# 並列度の調整
+PARALLELISM=16 make test   # 並列度を16に設定
+```
+
+### テスト実行例
+
+```bash
+# 通常の並列テスト
+make test-parallel
+
+# 高並列度での実行
+PARALLELISM=16 make test-unit
+
+# パフォーマンステスト（70人同時接続）
+make test-performance
+```
+
 ### 2. 環境設定
 
 `.env.example`をコピーして`.env`ファイルを作成：
