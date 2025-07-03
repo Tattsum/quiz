@@ -11,26 +11,35 @@ export default function NicknameInput({ onSubmit, loading = false }: NicknameInp
   const [nickname, setNickname] = useState('')
   const [error, setError] = useState('')
 
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setNickname(e.target.value)
+    if (error) {
+      setError('')
+    }
+  }
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     
-    if (!nickname.trim()) {
+    const trimmedNickname = nickname.trim()
+    
+    if (!trimmedNickname) {
       setError('ニックネームを入力してください')
       return
     }
     
-    if (nickname.trim().length < 2) {
+    if (trimmedNickname.length < 2) {
       setError('ニックネームは2文字以上で入力してください')
       return
     }
     
-    if (nickname.trim().length > 20) {
+    if (trimmedNickname.length > 20) {
       setError('ニックネームは20文字以下で入力してください')
       return
     }
     
     setError('')
-    onSubmit(nickname.trim())
+    onSubmit(trimmedNickname)
   }
 
   return (
@@ -57,7 +66,7 @@ export default function NicknameInput({ onSubmit, loading = false }: NicknameInp
               id="nickname"
               type="text"
               value={nickname}
-              onChange={(e) => setNickname(e.target.value)}
+              onChange={handleInputChange}
               className="input-primary w-full"
               placeholder="例: たろう"
               maxLength={20}
