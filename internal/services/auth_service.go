@@ -30,6 +30,10 @@ func (s *AuthService) AuthenticateAdmin(username, password string) (*models.Admi
 		return nil, errors.New("username and password are required")
 	}
 
+	if s.db == nil {
+		return nil, errors.New("database connection not initialized")
+	}
+
 	admin, err := s.getAdminByUsername(username)
 	if err != nil {
 		return nil, err
@@ -48,6 +52,10 @@ func (s *AuthService) AuthenticateAdmin(username, password string) (*models.Admi
 func (s *AuthService) GetAdminByID(id int64) (*models.Administrator, error) {
 	if id <= 0 {
 		return nil, errors.New("invalid admin ID")
+	}
+
+	if s.db == nil {
+		return nil, errors.New("database connection not initialized")
 	}
 
 	var admin models.Administrator
@@ -72,6 +80,10 @@ func (s *AuthService) GetAdminByID(id int64) (*models.Administrator, error) {
 }
 
 func (s *AuthService) getAdminByUsername(username string) (*models.Administrator, error) {
+	if s.db == nil {
+		return nil, errors.New("database connection not initialized")
+	}
+
 	var admin models.Administrator
 	query := `SELECT id, username, password_hash, email, created_at, updated_at 
 			  FROM administrators WHERE username = $1`
