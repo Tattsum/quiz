@@ -1,0 +1,19 @@
+{
+  "name": "quiz-e2e-tests",
+  "version": "1.0.0",
+  "description": "End-to-end tests for quiz system",
+  "scripts": {
+    "cypress:open": "cypress open",
+    "cypress:run": "cypress run",
+    "cypress:run:chrome": "cypress run --browser chrome",
+    "cypress:run:firefox": "cypress run --browser firefox",
+    "test": "cypress run",
+    "test:headed": "cypress run --headed",
+    "test:record": "cypress run --record"
+  },
+  "devDependencies": {
+    "cypress": "^13.6.4",
+    "@cypress/webpack-preprocessor": "^6.0.1",
+    "typescript": "^5.3.3"
+  }
+}
