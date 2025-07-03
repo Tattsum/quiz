@@ -63,6 +63,7 @@ type RequestResult struct {
 // テスト前のセットアップを行う
 func setupPerformanceTest(t *testing.T) {
 	// 1. サーバーが起動していることを確認
+	t.Helper()
 	t.Log("サーバーのヘルスチェックを実行中...")
 	resp, err := http.Get(BaseURL + "/api/session/status")
 	if err != nil || resp == nil {
@@ -113,6 +114,7 @@ func setupPerformanceTest(t *testing.T) {
 
 // テスト後のクリーンアップを行う
 func cleanupPerformanceTest(t *testing.T) {
+	t.Helper()
 	t.Log("パフォーマンステストのクリーンアップを実行中...")
 
 	// WebSocket接続の最終確認（サーバーが正常に動作していることを確認）
