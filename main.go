@@ -54,23 +54,23 @@ func main() {
 		// 認証関連
 		admin.POST("/logout", handlers.AdminLogout)
 		admin.GET("/verify", handlers.VerifyToken)
-		
+
 		// 問題管理
 		admin.GET("/quizzes", handlers.GetQuizzes)
 		admin.GET("/quizzes/:id", handlers.GetQuiz)
 		admin.POST("/quizzes", handlers.CreateQuiz)
 		admin.PUT("/quizzes/:id", handlers.UpdateQuiz)
 		admin.DELETE("/quizzes/:id", handlers.DeleteQuiz)
-		
+
 		// セッション管理
 		admin.POST("/session/start", handlers.StartSession)
 		admin.POST("/session/next", handlers.NextQuestion)
 		admin.POST("/session/toggle-answers", handlers.ToggleAnswers)
 		admin.POST("/session/end", handlers.EndSession)
-		
+
 		// ファイルアップロード
 		admin.POST("/upload/image", handlers.UploadImage)
-		
+
 		// 結果・ランキング（具体的なパスを先に定義）
 		admin.GET("/results/current", handlers.GetCurrentResults)
 		admin.GET("/ranking/overall", handlers.GetOverallRanking)

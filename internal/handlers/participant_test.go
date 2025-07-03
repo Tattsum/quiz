@@ -3,6 +3,7 @@ package handlers
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -103,6 +104,19 @@ func TestGetParticipant(t *testing.T) {
 		t.Fatalf("Database connection failed in test environment: %v", err)
 	}
 
+	// テスト用参加者を作成
+	db := database.GetDB()
+	_, err = db.Exec(`
+		INSERT INTO participants (id, nickname, created_at)
+		VALUES (1, 'TestUser1', CURRENT_TIMESTAMP)
+		ON CONFLICT (id) DO UPDATE SET
+			nickname = 'TestUser1',
+			created_at = CURRENT_TIMESTAMP
+	`)
+	if err != nil {
+		t.Fatalf("Failed to create test participant: %v", err)
+	}
+
 	tests := []struct {
 		name           string
 		participantID  string
@@ -155,6 +169,19 @@ func TestGetParticipantAnswers(t *testing.T) {
 		t.Skipf("Database connection failed (not in test environment): %v", err)
 	} else if err != nil {
 		t.Fatalf("Database connection failed in test environment: %v", err)
+	}
+
+	// テスト用参加者を作成
+	db := database.GetDB()
+	_, err = db.Exec(`
+		INSERT INTO participants (id, nickname, created_at)
+		VALUES (1, 'TestUser1', CURRENT_TIMESTAMP)
+		ON CONFLICT (id) DO UPDATE SET
+			nickname = 'TestUser1',
+			created_at = CURRENT_TIMESTAMP
+	`)
+	if err != nil {
+		t.Fatalf("Failed to create test participant: %v", err)
 	}
 
 	tests := []struct {
@@ -211,6 +238,55 @@ func TestSubmitAnswer(t *testing.T) {
 		t.Fatalf("Database connection failed in test environment: %v", err)
 	}
 
+	// テスト用データを確実に作成
+	db := database.GetDB()
+
+	// テスト用参加者を作成
+	_, err = db.Exec(`
+		INSERT INTO participants (id, nickname, created_at)
+		VALUES (1, 'TestUser1', CURRENT_TIMESTAMP)
+		ON CONFLICT (id) DO UPDATE SET
+			nickname = 'TestUser1',
+			created_at = CURRENT_TIMESTAMP
+	`)
+	if err != nil {
+		t.Fatalf("Failed to create test participant: %v", err)
+	}
+
+	// テスト用クイズを作成
+	_, err = db.Exec(`
+		INSERT INTO quizzes (id, question_text, option_a, option_b, option_c, option_d, correct_answer, created_at, updated_at)
+		VALUES (1, 'Test Question?', 'Option A', 'Option B', 'Option C', 'Option D', 'A', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+		ON CONFLICT (id) DO UPDATE SET
+			question_text = 'Test Question?',
+			option_a = 'Option A',
+			option_b = 'Option B',
+			option_c = 'Option C',
+			option_d = 'Option D',
+			correct_answer = 'A',
+			updated_at = CURRENT_TIMESTAMP
+	`)
+	if err != nil {
+		t.Fatalf("Failed to create test quiz: %v", err)
+	}
+
+	// テスト用のセッションを開始（既存のセッションと回答を削除してから作成）
+	_, err = db.Exec(`DELETE FROM answers`)
+	if err != nil {
+		t.Fatalf("Failed to clear test answers: %v", err)
+	}
+	_, err = db.Exec(`DELETE FROM quiz_sessions`)
+	if err != nil {
+		t.Fatalf("Failed to clear test sessions: %v", err)
+	}
+	_, err = db.Exec(`
+		INSERT INTO quiz_sessions (current_quiz_id, is_accepting_answers, created_at, updated_at)
+		VALUES (1, true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+	`)
+	if err != nil {
+		t.Fatalf("Failed to start test session: %v", err)
+	}
+
 	tests := []struct {
 		name           string
 		requestBody    interface{}
@@ -219,8 +295,8 @@ func TestSubmitAnswer(t *testing.T) {
 		{
 			name: "Submit answer with valid data",
 			requestBody: models.AnswerRequest{
-				ParticipantID:  3,  // 未使用の参加者IDを使用
-				QuizID:         3,  // 未使用のクイズIDを使用
+				ParticipantID:  1, // 既存の参加者IDを使用
+				QuizID:         1, // 既存のクイズIDを使用
 				SelectedOption: "A",
 			},
 			expectedStatus: http.StatusCreated,
@@ -292,6 +368,53 @@ func TestUpdateAnswer(t *testing.T) {
 		t.Fatalf("Database connection failed in test environment: %v", err)
 	}
 
+	// テスト用データを作成
+	db := database.GetDB()
+
+	// 参加者を作成
+	_, err = db.Exec(`
+		INSERT INTO participants (id, nickname, created_at)
+		VALUES (1, 'TestUser1', CURRENT_TIMESTAMP)
+		ON CONFLICT (id) DO UPDATE SET
+			nickname = 'TestUser1',
+			created_at = CURRENT_TIMESTAMP
+	`)
+	if err != nil {
+		t.Fatalf("Failed to create test participant: %v", err)
+	}
+
+	// クイズを作成
+	_, err = db.Exec(`
+		INSERT INTO quizzes (id, question_text, option_a, option_b, option_c, option_d, correct_answer, created_at, updated_at)
+		VALUES (1, 'Test Question?', 'Option A', 'Option B', 'Option C', 'Option D', 'A', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+		ON CONFLICT (id) DO UPDATE SET
+			question_text = 'Test Question?',
+			option_a = 'Option A',
+			option_b = 'Option B',
+			option_c = 'Option C',
+			option_d = 'Option D',
+			correct_answer = 'A',
+			updated_at = CURRENT_TIMESTAMP
+	`)
+	if err != nil {
+		t.Fatalf("Failed to create test quiz: %v", err)
+	}
+
+	// テスト用の回答を作成（既存の回答を削除してから作成）
+	_, err = db.Exec(`DELETE FROM answers WHERE participant_id = 1 AND quiz_id = 1`)
+	if err != nil {
+		t.Fatalf("Failed to clear test answers: %v", err)
+	}
+	var answerID int64
+	err = db.QueryRow(`
+		INSERT INTO answers (participant_id, quiz_id, selected_option, is_correct, answered_at)
+		VALUES (1, 1, 'A', true, CURRENT_TIMESTAMP)
+		RETURNING id
+	`).Scan(&answerID)
+	if err != nil {
+		t.Fatalf("Failed to create test answer: %v", err)
+	}
+
 	tests := []struct {
 		name           string
 		answerID       string
@@ -300,7 +423,7 @@ func TestUpdateAnswer(t *testing.T) {
 	}{
 		{
 			name:     "Update answer with valid data",
-			answerID: "1",
+			answerID: fmt.Sprintf("%d", answerID),
 			requestBody: models.AnswerUpdateRequest{
 				SelectedOption: "B",
 			},

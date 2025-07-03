@@ -187,76 +187,120 @@ WebSocketリアルタイム通信機能は完了済み:
 - CI設定更新（test_data.sql自動読み込み）
 - docker-compose.test.yml更新（テストデータ対応）
 
-### 品質状況サマリー（2025-07-03時点）
+### 品質状況サマリー（2025-07-03 21:25 JST時点）
 | プロジェクト | Lint | テスト | ビルド | カバレッジ |
 |------------|------|--------|--------|----------|
-| Go Backend | 🟡 291/297改善 | ✅ 統合テスト成功 | ✅ 成功 | 85%+ (主要サービス) |
+| Go Backend | ✅ 完全対応 | 🔴 統合テスト失敗 | ✅ 成功 | 40.5% (改善) |
 | Nuxt3 Dashboard | ✅ 完全対応 | ✅ 14/14成功 | ✅ 成功 | Chart.js統合 |
-| Next.js App | ✅ 100%成功 | ✅ 成功 | ✅ 成功 | TypeScript厳密 |
+| Next.js App | ✅ 100%成功 | ✅ 成功 | 🔴 ビルド失敗 | TypeScript厳密 |
 
-## 🚨 やり残しタスク（次回セッション対応）
+## 🚨 CI失敗要因と対応タスク（緊急）
 
-### 🔴 高優先度（CI失敗要因）
+### 🔴 **PR #23 CI失敗状況分析** (2025-07-03 12:22-12:25 UTC)
 
-#### Go Backend 残課題
-1. **結果APIのルーティング修正**
-   - 問題: `/api/admin/results/:id` が正常に動作しない
-   - 影響: 統合テストで一時的にコメントアウト中
-   - 対応: ルート競合問題の解決が必要
-   - ファイル: `main.go`, `integration_test.go`
+#### CI-FAIL-001: Go Backend 統合テスト失敗
+**状態**: 🔴 失敗  
+**問題**: `integration_test.go` でデータベース接続エラー
+**エラー詳細**:
+```
+Failed to ping test database: dial tcp [::1]:5433: connect: connection refused
+FAIL	github.com/Tattsum/quiz	0.022s
+```
+**原因**: CI環境のDB環境変数がローカルテスト設定と不一致
+- CI環境: `DB_PORT: 5432` (GitHub Actions)
+- ローカル: `DB_PORT: 5433` (test_helper.go修正済み)
+**対応**: CI環境変数をDB_PORT=5433に修正が必要
 
-2. **ユニットテストのデータベース接続修正**
-   - 問題: `internal/` パッケージのテストがDB接続エラー
-   - 影響: TestRegisterParticipant, TestGetQuiz等が失敗
-   - 対応: テスト環境でのDB接続設定統一が必要
-   - ファイル: `internal/handlers/*_test.go`
+#### CI-FAIL-002: Next.js ビルド失敗  
+**状態**: 🔴 失敗  
+**問題**: `useSearchParams()` がSuspense境界外で使用
+**エラー詳細**:
+```
+⨯ useSearchParams() should be wrapped in a suspense boundary at page "/". 
+Read more: https://nextjs.org/docs/messages/missing-suspense-with-csr-bailout
+```
+**原因**: Next.js 14の静的生成時にuseSearchParams()がSuspenseでラップされていない
+**対応**: participant-app のページコンポーネントにSuspense追加が必要
 
-3. **画像サービステストのファイルエラー修正**
-   - 問題: `TestImageService_ProcessImage` でファイルが見つからない
-   - 影響: 画像アップロード機能のテスト失敗
-   - 対応: テスト用ファイルの作成またはモック対応
-   - ファイル: `internal/services/image_service_test.go`
+#### CI-SUCCESS: 成功項目
+- ✅ **go-backend**: Lint, Format, Vet すべて通過
+- ✅ **go-backend**: 単体テスト 40.5%カバレッジで通過
+- ✅ **nuxt-admin**: すべてのステップ成功
+- ✅ **nextjs-participant**: Lint, Test すべて通過
 
-4. **WebSocketテストのnilポインタエラー修正**
-   - 問題: WebSocketテストでパニック発生
-   - 影響: リアルタイム機能のテスト失敗
-   - 対応: データベース接続の初期化順序修正
-   - ファイル: `internal/handlers/websocket_test.go`
+### 🔴 **緊急修正タスク**
 
-### 🟡 中優先度（機能改善）
+#### TASK-001: CI環境データベース設定修正
+**優先度**: 🔴 最高  
+**ファイル**: `.github/workflows/ci.yml`  
+**修正内容**:
+```yaml
+# Before
+env:
+  DB_PORT: 5432
 
-5. **パフォーマンステストの修正**
-   - 問題: 外部サーバー接続を試行して失敗
-   - 対応: テスト環境での実行に変更
-   - ファイル: `performance_test.go`
+# After  
+env:
+  DB_PORT: 5433
+```
+**影響**: Go Backend統合テストが実行可能になる
 
-6. **golangci-lint残りエラーの修正**
-   - 状況: 291/297件に改善済み
-   - 残り: 6件のlintエラー
-   - 対応: 定数使用、型アサーション等の修正
+#### TASK-002: Next.js useSearchParams Suspense対応
+**優先度**: 🔴 最高  
+**ファイル**: `participant-app/src/app/page.tsx`  
+**修正内容**: useSearchParams()をSuspenseでラップ
+```tsx
+// Before
+export default function HomePage() {
+  const searchParams = useSearchParams();
+  // ...
+}
 
-### 🔵 低優先度（将来対応）
+// After
+import { Suspense } from 'react';
 
-7. **結果APIの管理者認証実装**
-   - 現在: 公開APIとして動作
-   - 将来: 管理者認証付きAPIに変更
+function HomeContent() {
+  const searchParams = useSearchParams();
+  // ...
+}
 
-8. **カバレッジ向上**
-   - 現在: 主要サービス85%+
-   - 目標: 全体90%+
+export default function HomePage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <HomeContent />
+    </Suspense>
+  );
+}
+```
+**影響**: Next.js静的ビルドが成功するようになる
 
-### ✅ 完了済み（本セッション）
+### 🟡 **従来の残課題（優先度：中）**
+*注：上記のTASK-001, 002が完了すればCI通過可能*
 
-- **統合テスト修正**: 4つの統合テストすべて成功
-- **ルーティング統合**: 管理者エンドポイントの競合解決
-- **認証フロー確認**: JWT認証とミドルウェア正常動作
-- **WebSocket機能確認**: リアルタイム通信正常動作
-- **データベース環境**: PostgreSQLテスト環境構築完了
+#### TASK-003: 個別ユニットテスト改善（オプション）
+**優先度**: 🟡 中  
+**問題**: 一部の単体テストでテストデータ依存による失敗
+- `TestSubmitAnswer`: "This quiz is not currently active" エラー  
+- `TestGetQuiz`: クイズID 1が見つからないエラー
+**対応**: テスト用セッション開始処理とクイズデータ作成
 
-## 📋 次回セッション推奨手順
+#### TASK-004: golangci-lintエラー最終対応（オプション）
+**優先度**: 🟡 中  
+**残り**: 6件のlintエラー（291/297件対応済み）
+**対応**: 定数使用、型アサーション等の修正
 
-1. **データベース接続統一**: テスト環境の設定を統合テストと合わせる
-2. **結果APIルーティング**: ルート競合問題を根本解決
-3. **画像テスト修正**: テスト用ファイル作成またはモック実装
-4. **WebSocketテスト修正**: 初期化順序とエラーハンドリング改善
-5. **CI実行確認**: 全修正後にGitHub Actions CI確認
+### ✅ **修正完了済み項目**
+- ✅ **DB接続設定**: ローカルテスト環境でポート5433に修正済み
+- ✅ **WebSocketテスト**: nilポインタパニック解消
+- ✅ **画像サービステスト**: ファイルアクセス問題解消  
+- ✅ **統合テストルーティング**: APIパス統一
+- ✅ **基本的なGoテスト**: 40.5%カバレッジで通過
+
+## 📋 **次回修正手順（緊急）**
+
+1. **CI環境変数修正**: `.github/workflows/ci.yml` の `DB_PORT: 5432` → `5433`
+2. **Next.js Suspense追加**: `participant-app/src/app/page.tsx` にSuspense境界追加
+3. **PR更新**: 修正内容をコミット・プッシュしてCI再実行
+4. **CI通過確認**: 全4つのジョブ（go-backend, nuxt-admin, nextjs-participant, integration）成功確認
+
+**予想結果**: 上記2点修正でCI完全通過可能
