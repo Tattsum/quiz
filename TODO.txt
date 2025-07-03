@@ -83,3 +83,8 @@ Go言語でWebSocketを使用したリアルタイム通信機能を実装
 WebSocketリアルタイム通信機能は完了済み:
 - internal/handlers/websocket.go: WebSocket機能実装完了
 - internal/models/models.go: WebSocket関連モデル定義完了
+
+管理者ダッシュボード（Nuxt3）は完了済み:
+- admin-dashboard/: 管理者向けフロントエンド
+- ログイン、問題管理、クイズ制御、リアルタイム統計、ランキング表示機能
+- レスポンシブデザイン対応
