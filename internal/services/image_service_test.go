@@ -6,7 +6,6 @@ import (
 	"image/jpeg"
 	"mime/multipart"
 	"net/textproto"
-	"os"
 	"testing"
 )
 
@@ -194,12 +193,31 @@ func TestImageService_sanitizeFilename(t *testing.T) {
 // Helper functions for creating test data
 
 func createTestImageFileHeader(filename, contentType string, imageData []byte) *multipart.FileHeader {
-	// Create a temporary file for testing
-	tmpFile, _ := os.CreateTemp("", filename)
-	defer os.Remove(tmpFile.Name())
-	_, _ = tmpFile.Write(imageData) // テスト用なのでエラーハンドリング不要
-	tmpFile.Close()
+	// Create a buffer to simulate multipart data
+	var b bytes.Buffer
+	writer := multipart.NewWriter(&b)
 
+	// Create form file
+	fw, _ := writer.CreateFormFile("image", filename)
+	_, _ = fw.Write(imageData)
+	writer.Close()
+
+	// Parse the multipart data to get a real FileHeader
+	reader := multipart.NewReader(&b, writer.Boundary())
+	form, _ := reader.ReadForm(int64(len(imageData)) + 1024)
+
+	// Clean up form on exit
+	defer func() {
+		if form != nil {
+			_ = form.RemoveAll()
+		}
+	}()
+
+	if form.File["image"] != nil && len(form.File["image"]) > 0 {
+		return form.File["image"][0]
+	}
+
+	// Fallback to a basic FileHeader if parsing fails
 	return &multipart.FileHeader{
 		Filename: filename,
 		Header: textproto.MIMEHeader{
@@ -210,6 +228,31 @@ func createTestImageFileHeader(filename, contentType string, imageData []byte) *
 }
 
 func createTestFileHeader(filename, contentType string, data []byte) *multipart.FileHeader {
+	// Create a buffer to simulate multipart data
+	var b bytes.Buffer
+	writer := multipart.NewWriter(&b)
+
+	// Create form file
+	fw, _ := writer.CreateFormFile("file", filename)
+	_, _ = fw.Write(data)
+	writer.Close()
+
+	// Parse the multipart data to get a real FileHeader
+	reader := multipart.NewReader(&b, writer.Boundary())
+	form, _ := reader.ReadForm(int64(len(data)) + 1024)
+
+	// Clean up form on exit
+	defer func() {
+		if form != nil {
+			_ = form.RemoveAll()
+		}
+	}()
+
+	if form.File["file"] != nil && len(form.File["file"]) > 0 {
+		return form.File["file"][0]
+	}
+
+	// Fallback to a basic FileHeader if parsing fails
 	return &multipart.FileHeader{
 		Filename: filename,
 		Header: textproto.MIMEHeader{
