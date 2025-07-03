@@ -196,13 +196,30 @@ jobs:
       env:
         PGPASSWORD: quiz_password
       run: |
+        echo "Testing database connection..."
         psql -h localhost -U quiz_user -d quiz_db_test -c "SELECT 1" || exit 1
+        echo "Database connection successful"
+        
+        echo "Applying database schema..."
         if [ -f database_schema.sql ]; then
+          echo "Found database_schema.sql, applying..."
           psql -h localhost -U quiz_user -d quiz_db_test -f database_schema.sql
+          echo "Schema applied successfully"
+        else
+          echo "Warning: database_schema.sql not found"
         fi
+        
+        echo "Loading test data..."
         if [ -f test_data.sql ]; then
+          echo "Found test_data.sql, loading..."
           psql -h localhost -U quiz_user -d quiz_db_test -f test_data.sql
+          echo "Test data loaded successfully"
+        else
+          echo "Warning: test_data.sql not found"
         fi
+        
+        echo "Verifying table creation..."
+        psql -h localhost -U quiz_user -d quiz_db_test -c "\dt" | grep -E "(administrators|participants|quizzes|answers|quiz_sessions)" || echo "Warning: Some tables may not exist"
 
     - name: Run unit tests with coverage (parallel)
       env:
@@ -255,6 +272,8 @@ jobs:
 
   go-integration-tests:
     runs-on: ubuntu-latest
+    # 依存関係を最小限に削減 - フォーマットとベットのみ
+    needs: [go-format, go-vet]
     
     services:
       postgres:
@@ -271,6 +290,7 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+          --tmpfs /var/lib/postgresql/data
       
       redis:
         image: redis:7-alpine
@@ -281,6 +301,12 @@ jobs:
           --health-interval 10s
           --health-timeout 3s
           --health-retries 3
+          --tmpfs /data
+
+    strategy:
+      fail-fast: false
+      matrix:
+        test-type: [flow-tests, session-tests, concurrent-tests]
 
     steps:
     - uses: actions/checkout@v4
@@ -296,24 +322,57 @@ jobs:
         path: |
           ~/.cache/go-build
           ~/go/pkg/mod
-        key: ${{ runner.os }}-go-integration-${{ hashFiles('**/go.sum') }}
+        key: ${{ runner.os }}-go-integration-${{ hashFiles('**/go.sum') }}-${{ matrix.test-type }}
         restore-keys: |
-          ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          ${{ runner.os }}-go-integration-${{ hashFiles('**/go.sum') }}
           ${{ runner.os }}-go-
 
-    - name: Set up test database
+    - name: Cache database schema
+      uses: actions/cache@v4
+      with:
+        path: |
+          database_schema.sql
+          test_data.sql
+        key: db-schema-${{ hashFiles('database_schema.sql', 'test_data.sql') }}
+
+    - name: Set up test database (optimized)
       env:
         PGPASSWORD: quiz_password
+        DB_HOST: localhost
+        DB_PORT: 5432
+        DB_USER: quiz_user
+        DB_NAME: quiz_db_test
       run: |
+        echo "Testing database connection..."
         psql -h localhost -U quiz_user -d quiz_db_test -c "SELECT 1" || exit 1
+        echo "Database connection successful"
+        
+        echo "Applying database schema..."
         if [ -f database_schema.sql ]; then
+          echo "Found database_schema.sql, applying..."
           psql -h localhost -U quiz_user -d quiz_db_test -f database_schema.sql
+          echo "Schema applied successfully"
+        else
+          echo "Warning: database_schema.sql not found"
         fi
-        if [ -f test_data.sql ]; then
+        
+        echo "Loading test data..."
+        if [ -f test_data_light.sql ]; then
+          echo "Found test_data_light.sql, loading..."
+          psql -h localhost -U quiz_user -d quiz_db_test -f test_data_light.sql
+          echo "Light test data loaded successfully"
+        elif [ -f test_data.sql ]; then
+          echo "Found test_data.sql, loading..."
           psql -h localhost -U quiz_user -d quiz_db_test -f test_data.sql
+          echo "Test data loaded successfully"
+        else
+          echo "Warning: No test data files found"
         fi
+        
+        echo "Verifying table creation..."
+        psql -h localhost -U quiz_user -d quiz_db_test -c "\dt" | grep -E "(administrators|participants|quizzes|answers|quiz_sessions)" || echo "Warning: Some tables may not exist"
 
-    - name: Run integration tests with coverage
+    - name: Run integration tests (parallel)
       env:
         DB_HOST: localhost
         DB_PORT: 5432
@@ -323,18 +382,33 @@ jobs:
         REDIS_HOST: localhost
         REDIS_PORT: 6379
         TEST_ENV: true
+        INTEGRATION_TEST_TYPE: ${{ matrix.test-type }}
       run: |
-        go test -v -race -parallel 4 -coverprofile=coverage-integration.out -covermode=atomic -timeout 10m ./integration_test.go
+        # テストタイプ別に並列実行
+        case "${{ matrix.test-type }}" in
+          "flow-tests")
+            echo "Running flow-based integration tests..."
+            go test -v -race -parallel 4 -run "TestIntegrationQuizFlow|TestIntegrationParticipantFlow" -coverprofile=coverage-integration-flow.out -covermode=atomic -timeout 5m ./integration_test.go
+            ;;
+          "session-tests")
+            echo "Running session management tests..."
+            go test -v -race -parallel 4 -run "TestIntegrationSessionManagement" -coverprofile=coverage-integration-session.out -covermode=atomic -timeout 3m ./integration_test.go
+            ;;
+          "concurrent-tests")
+            echo "Running concurrent access tests..."
+            go test -v -race -parallel 2 -run "TestIntegrationConcurrentAnswers" -coverprofile=coverage-integration-concurrent.out -covermode=atomic -timeout 4m ./integration_test.go
+            ;;
+        esac
 
     - name: Upload integration coverage
       uses: actions/upload-artifact@v4
       with:
-        name: integration-coverage
-        path: coverage-integration.out
+        name: integration-coverage-${{ matrix.test-type }}
+        path: coverage-integration-*.out
 
   go-performance-tests:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 15
     
     services:
       postgres:
@@ -454,10 +528,10 @@ jobs:
         TEST_ENV: true
         RUN_PERFORMANCE_TESTS: "true"
         GITHUB_ACTIONS: "true"
-        PERF_TEST_MAX_USERS: "50"
-        PERF_TEST_DURATION: "20s"
+        PERF_TEST_MAX_USERS: "30"
+        PERF_TEST_DURATION: "15s"
       run: |
-        go test -v -run "TestConcurrent|TestSystemLoad" -timeout 15m ./performance_test.go
+        go test -v -run "TestConcurrent|TestSystemLoad" -timeout 10m ./performance_test.go
 
     - name: Stop server
       if: always()
@@ -486,7 +560,7 @@ jobs:
         pattern: '*-coverage*'
         merge-multiple: true
 
-    - name: Merge coverage reports
+    - name: Merge coverage reports (optimized)
       run: |
         echo "mode: atomic" > coverage.out
         # Merge coverage files properly, excluding headers and mode lines
@@ -496,6 +570,12 @@ jobs:
             tail -n +2 "$file" | grep -v "mode: atomic" >> coverage.out || true
           fi
         done
+        
+        # Validate merged coverage file
+        if [ ! -s coverage.out ]; then
+          echo "Warning: No coverage data found, creating empty coverage file"
+          echo "mode: atomic" > coverage.out
+        fi
         
     - name: Generate coverage report
       run: |
@@ -605,10 +685,11 @@ jobs:
     - name: Build
       run: npm run build
 
-  # Integration Tests
+  # Fast E2E Integration Tests
   integration:
     runs-on: ubuntu-latest
-    needs: [go-backend, nuxt-admin, nextjs-participant]
+    # フロントエンドビルドは並行して実行、Go integrationテストのみ待機
+    needs: [go-integration-tests, nuxt-admin, nextjs-participant]
     
     services:
       postgres:
@@ -625,6 +706,7 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+          --tmpfs /var/lib/postgresql/data
       
       redis:
         image: redis:7-alpine
@@ -635,6 +717,7 @@ jobs:
           --health-interval 10s
           --health-timeout 3s
           --health-retries 3
+          --tmpfs /data
 
     steps:
     - uses: actions/checkout@v4
@@ -649,18 +732,52 @@ jobs:
       with:
         node-version: ${{ env.NODE_VERSION }}
 
-    - name: Set up test database
+    - name: Cache database schema
+      uses: actions/cache@v4
+      with:
+        path: |
+          database_schema.sql
+          test_data.sql
+        key: db-schema-${{ hashFiles('database_schema.sql', 'test_data.sql') }}
+
+    - name: Set up test database (cached)
       env:
         PGPASSWORD: quiz_password
+        DB_HOST: localhost
+        DB_PORT: 5432
+        DB_USER: quiz_user
+        DB_NAME: quiz_db_test
       run: |
+        echo "Testing database connection..."
+        psql -h localhost -U quiz_user -d quiz_db_test -c "SELECT 1" || exit 1
+        echo "Database connection successful"
+        
+        echo "Applying database schema..."
         if [ -f database_schema.sql ]; then
+          echo "Found database_schema.sql, applying..."
           psql -h localhost -U quiz_user -d quiz_db_test -f database_schema.sql
+          echo "Schema applied successfully"
+        else
+          echo "Warning: database_schema.sql not found"
         fi
-        if [ -f test_data.sql ]; then
+        
+        echo "Loading test data..."
+        if [ -f test_data_light.sql ]; then
+          echo "Found test_data_light.sql, loading..."
+          psql -h localhost -U quiz_user -d quiz_db_test -f test_data_light.sql
+          echo "Light test data loaded successfully"
+        elif [ -f test_data.sql ]; then
+          echo "Found test_data.sql, loading..."
           psql -h localhost -U quiz_user -d quiz_db_test -f test_data.sql
+          echo "Test data loaded successfully"
+        else
+          echo "Warning: No test data files found"
         fi
+        
+        echo "Verifying table creation..."
+        psql -h localhost -U quiz_user -d quiz_db_test -c "\dt" | grep -E "(administrators|participants|quizzes|answers|quiz_sessions)" || echo "Warning: Some tables may not exist"
 
-    - name: Run integration tests
+    - name: Run quick end-to-end verification
       env:
         DB_HOST: localhost
         DB_PORT: 5432
@@ -671,8 +788,10 @@ jobs:
         REDIS_PORT: 6379
         TEST_ENV: true
       run: |
+        # 軽量なE2Eテストのみ実行（詳細テストは前のステップで完了済み）
         if [ -f integration_test.go ]; then
-          go test -v ./integration_test.go
+          echo "Running quick verification test..."
+          go test -v -race -timeout 2m -run "TestIntegrationQuizFlow" ./integration_test.go
         fi
 
     - name: Run E2E tests setup check

@@ -44,6 +44,17 @@ test-integration: ## Run integration tests only
 	@echo "Running integration tests..."
 	@go test -v -race -parallel 4 -timeout 10m ./integration_test.go
 
+test-integration-fast: ## Run integration tests with optimized settings
+	@echo "Running fast integration tests..."
+	@go test -v -race -parallel 8 -timeout 5m ./integration_test.go
+
+test-integration-parallel: ## Run integration tests by type in parallel
+	@echo "Running parallel integration tests..."
+	@INTEGRATION_TEST_TYPE=flow-tests go test -v -race -parallel 4 -run "TestIntegrationQuizFlow|TestIntegrationParticipantFlow" -timeout 3m ./integration_test.go &
+	@INTEGRATION_TEST_TYPE=session-tests go test -v -race -parallel 4 -run "TestIntegrationSessionManagement" -timeout 2m ./integration_test.go &
+	@INTEGRATION_TEST_TYPE=concurrent-tests go test -v -race -parallel 2 -run "TestIntegrationConcurrentAnswers" -timeout 3m ./integration_test.go &
+	@wait
+
 test-performance: ## Run performance tests only
 	@echo "Running performance tests..."
 	@RUN_PERFORMANCE_TESTS=true go test -v -run "TestConcurrent|TestSystemLoad" -timeout 15m ./performance_test.go
