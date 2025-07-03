@@ -58,7 +58,7 @@
     {
       "matchUpdateTypes": ["major"],
       "groupName": "Major updates",
-      "schedule": ["before 6am on first day of month"],
+      "schedule": ["0 5 1 * *"],
       "dependencyDashboard": true
     }
   ],
@@ -72,27 +72,5 @@
   "labels": ["dependencies", "renovate"],
   "commitMessagePrefix": "chore(deps):",
   "prTitle": "{{commitMessagePrefix}} {{commitMessageAction}} {{commitMessageTopic}} {{commitMessageExtra}}",
-  "prBodyTemplate": [
-    "This PR contains the following updates:",
-    "",
-    "| Package | Change | Age | Adoption | Passing | Confidence |",
-    "|---------|--------|-----|----------|---------|------------|",
-    "{{#each upgrades as |upgrade|}}",
-    "| {{upgrade.depName}} | {{#if upgrade.displayFrom}}{{upgrade.displayFrom}} → {{upgrade.displayTo}}{{else}}{{upgrade.newValue}}{{/if}} | [![age](https://badges.renovateapi.com/packages/{{upgrade.datasource}}/{{replace '/' '%2f' upgrade.depName}}/{{upgrade.newVersion}}/age-slim)](https://docs.renovatebot.com/merge-confidence/) | [![adoption](https://badges.renovateapi.com/packages/{{upgrade.datasource}}/{{replace '/' '%2f' upgrade.depName}}/{{upgrade.newVersion}}/adoption-slim)](https://docs.renovatebot.com/merge-confidence/) | [![passing](https://badges.renovateapi.com/packages/{{upgrade.datasource}}/{{replace '/' '%2f' upgrade.depName}}/{{upgrade.newVersion}}/compatibility-slim/{{upgrade.currentVersion}})](https://docs.renovatebot.com/merge-confidence/) | [![confidence](https://badges.renovateapi.com/packages/{{upgrade.datasource}}/{{replace '/' '%2f' upgrade.depName}}/{{upgrade.newVersion}}/confidence-slim/{{upgrade.currentVersion}})](https://docs.renovatebot.com/merge-confidence/) |",
-    "{{/each}}",
-    "",
-    "---",
-    "",
-    "### Configuration",
-    "",
-    "📅 **Schedule**: {{schedule}}",
-    "",
-    "🚦 **Automerge**: {{automerge}}",
-    "",
-    "♻ **Rebasing**: {{rebaseWhen}}",
-    "",
-    "🔕 **Ignore**: Close this PR and you won't be reminded about {{#if (containsString updateType 'major')}}these{{else}}this{{/if}} update{{#unless (eq (len upgrades) 1)}}s{{/unless}} again.",
-    "",
-    "---"
-  ]
+  "prBodyTemplate": "This PR contains the following updates:\n\n| Package | Change | Age | Adoption | Passing | Confidence |\n|---------|--------|-----|----------|---------|------------|\n{{#each upgrades as |upgrade|}}\n| {{upgrade.depName}} | {{#if upgrade.displayFrom}}{{upgrade.displayFrom}} → {{upgrade.displayTo}}{{else}}{{upgrade.newValue}}{{/if}} | [![age](https://badges.renovateapi.com/packages/{{upgrade.datasource}}/{{replace '/' '%2f' upgrade.depName}}/{{upgrade.newVersion}}/age-slim)](https://docs.renovatebot.com/merge-confidence/) | [![adoption](https://badges.renovateapi.com/packages/{{upgrade.datasource}}/{{replace '/' '%2f' upgrade.depName}}/{{upgrade.newVersion}}/adoption-slim)](https://docs.renovatebot.com/merge-confidence/) | [![passing](https://badges.renovateapi.com/packages/{{upgrade.datasource}}/{{replace '/' '%2f' upgrade.depName}}/{{upgrade.newVersion}}/compatibility-slim/{{upgrade.currentVersion}})](https://docs.renovatebot.com/merge-confidence/) | [![confidence](https://badges.renovateapi.com/packages/{{upgrade.datasource}}/{{replace '/' '%2f' upgrade.depName}}/{{upgrade.newVersion}}/confidence-slim/{{upgrade.currentVersion}})](https://docs.renovatebot.com/merge-confidence/) |\n{{/each}}\n\n---\n\n### Configuration\n\n📅 **Schedule**: {{schedule}}\n\n🚦 **Automerge**: {{automerge}}\n\n♻ **Rebasing**: {{rebaseWhen}}\n\n🔕 **Ignore**: Close this PR and you won't be reminded about {{#if (containsString updateType 'major')}}these{{else}}this{{/if}} update{{#unless (eq (len upgrades) 1)}}s{{/unless}} again.\n\n---"
 }
