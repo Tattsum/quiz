@@ -73,3 +73,8 @@ func Close() error {
 func GetDB() *sql.DB {
 	return DB
 }
+
+// SetTestDB sets the database instance for testing
+func SetTestDB(db *sql.DB) {
+	DB = db
+}
