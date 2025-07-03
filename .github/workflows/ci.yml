@@ -679,6 +679,12 @@ jobs:
       working-directory: ./e2e
       run: |
         if [ -f package.json ]; then
-          npm ci
+          if [ -f package-lock.json ]; then
+            echo "Using npm ci with existing package-lock.json"
+            npm ci
+          else
+            echo "No package-lock.json found, using npm install"
+            npm install
+          fi
           echo "E2E tests dependencies installed"
         fi
