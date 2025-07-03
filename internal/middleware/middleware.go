@@ -2,6 +2,7 @@
 package middleware
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -9,10 +10,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Tattsum/quiz/internal/services"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"golang.org/x/time/rate"
+
+	"github.com/Tattsum/quiz/internal/services"
 )
 
 var (
@@ -69,16 +71,17 @@ func RateLimit() gin.HandlerFunc {
 		// Determine rate limit based on endpoint
 		var limiter *rate.Limiter
 
-		if strings.HasPrefix(c.Request.URL.Path, "/api/admin") {
+		switch {
+		case strings.HasPrefix(c.Request.URL.Path, "/api/admin"):
 			// Admin endpoints: 100 requests per minute
 			limiter = getLimiter(clientIP+":admin", rate.Every(time.Minute/100), 100)
-		} else if strings.HasPrefix(c.Request.URL.Path, "/api/auth") {
+		case strings.HasPrefix(c.Request.URL.Path, "/api/auth"):
 			// Auth endpoints: 5 requests per minute (stricter for login)
 			limiter = getLimiter(clientIP+":auth", rate.Every(time.Minute/5), 5)
-		} else if strings.HasPrefix(c.Request.URL.Path, "/api/answers") {
+		case strings.HasPrefix(c.Request.URL.Path, "/api/answers"):
 			// Answer endpoints: 60 requests per minute
 			limiter = getLimiter(clientIP+":answers", rate.Every(time.Second), 60)
-		} else {
+		default:
 			// Default: 100 requests per minute
 			limiter = getLimiter(clientIP+":default", rate.Every(time.Minute/100), 100)
 		}
@@ -176,11 +179,11 @@ func JWTAuth(jwtService *services.JWTService) gin.HandlerFunc {
 		claims, err := jwtService.ValidateAccessToken(tokenString)
 		if err != nil {
 			var errorCode, errorMessage string
-			switch err {
-			case services.ErrExpiredToken:
+			switch {
+			case errors.Is(err, services.ErrExpiredToken):
 				errorCode = "TOKEN_EXPIRED"
 				errorMessage = "Token has expired"
-			case services.ErrInvalidTokenType:
+			case errors.Is(err, services.ErrInvalidTokenType):
 				errorCode = "INVALID_TOKEN_TYPE"
 				errorMessage = "Invalid token type"
 			default:
@@ -221,12 +224,4 @@ func BlacklistToken(tokenString string) {
 	blacklistMutex.Lock()
 	defer blacklistMutex.Unlock()
 	tokenBlacklist[tokenString] = true
-}
-
-// getEnv gets environment variable with fallback to default value
-func getEnv(key, defaultValue string) string {
-	if value := os.Getenv(key); value != "" {
-		return value
-	}
-	return defaultValue
 }

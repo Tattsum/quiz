@@ -18,19 +18,24 @@ import (
 )
 
 const (
+	// MaxFileSize defines the maximum allowed file size for image uploads (5MB)
 	MaxFileSize    = 5 * 1024 * 1024
 	MaxImageWidth  = 1920
 	MaxImageHeight = 1080
 	JpegQuality    = 80
 
-	// Image format constants
+	// FormatJPEG represents the JPEG image format
 	FormatJPEG = "jpeg"
+	// FormatPNG represents the PNG image format
 	FormatPNG  = "png"
+	// FormatGIF represents the GIF image format
 	FormatGIF  = "gif"
 
-	// Content type constants
+	// ContentTypeJPEG represents the MIME type for JPEG images
 	ContentTypeJPEG = "image/jpeg"
+	// ContentTypePNG represents the MIME type for PNG images
 	ContentTypePNG  = "image/png"
+	// ContentTypeGIF represents the MIME type for GIF images
 	ContentTypeGIF  = "image/gif"
 )
 
@@ -72,7 +77,7 @@ func (s *ImageService) ValidateImage(fileHeader *multipart.FileHeader) (*ImageVa
 	if err != nil {
 		return nil, fmt.Errorf("failed to open uploaded file: %w", err)
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	buffer := make([]byte, 512)
 	_, err = file.Read(buffer)
@@ -126,7 +131,7 @@ func (s *ImageService) ProcessImage(fileHeader *multipart.FileHeader) (*models.I
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to open file: %w", err)
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	originalImg, format, err := image.Decode(file)
 	if err != nil {
@@ -146,11 +151,11 @@ func (s *ImageService) ProcessImage(fileHeader *multipart.FileHeader) (*models.I
 
 	var buf bytes.Buffer
 	switch format {
-	case "jpeg":
+	case FormatJPEG:
 		err = jpeg.Encode(&buf, processedImg, &jpeg.Options{Quality: JpegQuality})
-	case "png":
+	case FormatPNG:
 		err = png.Encode(&buf, processedImg)
-	case "gif":
+	case FormatGIF:
 		err = gif.Encode(&buf, processedImg, nil)
 	}
 
@@ -179,15 +184,15 @@ func (s *ImageService) detectContentType(buffer []byte) string {
 	}
 
 	if bytes.HasPrefix(buffer, []byte{0xFF, 0xD8, 0xFF}) {
-		return "image/jpeg"
+		return ContentTypeJPEG
 	}
 
 	if bytes.HasPrefix(buffer, []byte{0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A}) {
-		return "image/png"
+		return ContentTypePNG
 	}
 
 	if bytes.HasPrefix(buffer, []byte("GIF87a")) || bytes.HasPrefix(buffer, []byte("GIF89a")) {
-		return "image/gif"
+		return ContentTypeGIF
 	}
 
 	return ""
@@ -195,12 +200,12 @@ func (s *ImageService) detectContentType(buffer []byte) string {
 
 func (s *ImageService) getExpectedFormat(contentType string) string {
 	switch contentType {
-	case "image/jpeg":
-		return "jpeg"
-	case "image/png":
-		return "png"
-	case "image/gif":
-		return "gif"
+	case ContentTypeJPEG:
+		return FormatJPEG
+	case ContentTypePNG:
+		return FormatPNG
+	case ContentTypeGIF:
+		return FormatGIF
 	default:
 		return ""
 	}

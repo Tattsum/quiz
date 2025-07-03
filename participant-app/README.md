@@ -22,6 +22,8 @@ Next.js 14で構築されたスマートフォン向けクイズ参加システ�
 - **スタイリング**: Tailwind CSS
 - **リアルタイム通信**: WebSocket
 - **状態管理**: React Hooks
+- **テスト**: Jest + React Testing Library
+- **リント**: ESLint + Next.js Rules
 
 ## 開発・実行
 
@@ -36,9 +38,25 @@ npm run build
 npm start
 ```
 
-### Lint実行
+### テスト実行
 ```bash
+# Jestテスト実行
+npm run test
+
+# テスト（ウォッチモード）
+npm run test:watch
+
+# カバレッジ付きテスト
+npm run test:coverage
+```
+
+### Lint・フォーマット
+```bash
+# ESLintチェック
 npm run lint
+
+# 自動修正
+npm run lint:fix
 ```
 
 ## 環境変数
@@ -77,9 +95,27 @@ Go言語バックエンドとの連携:
 - `/api/quiz/{id}/session` - クイズセッション取得
 - `/ws` - WebSocket接続
 
+## コード品質
+
+### リント状況
+- **ESLint**: 100%成功 ✅
+- **TypeScript**: 厳密な型チェック
+- **Next.js**: App Router規約準拠
+
+### テスト状況
+- **コンポーネントテスト**: NicknameInputコンポーネント
+- **React Testing Library**: ユーザー中心のテスト
+- **モック**: API・WebSocket統合テスト対応
+
+### ビルド確認
+- **Next.js**: 静的エクスポート対応
+- **TypeScript**: コンパイルエラーなし
+- **最適化**: プロダクション向けビルド
+
 ## ユニバーサルデザイン
 
 - **視覚的配慮**: 高コントラスト、大きな文字
 - **操作性**: 大きなタッチターゲット
 - **アクセシビリティ**: ARIAラベル、キーボードナビゲーション
 - **レスポンシブ**: スマートフォン最適化
+- **高品質**: ESLint 100%成功、型安全性確保

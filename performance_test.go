@@ -106,7 +106,7 @@ func TestConcurrentParticipantRegistration(t *testing.T) {
 	// 結果を集計
 	var totalLatency time.Duration
 	var maxLatency time.Duration
-	var minLatency time.Duration = time.Hour // 初期値として大きな値を設定
+	minLatency := time.Hour // 初期値として大きな値を設定
 	successCount := 0
 	failCount := 0
 
@@ -189,7 +189,10 @@ func TestConcurrentWebSocketConnections(t *testing.T) {
 				return
 			}
 
-			conn, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
+			conn, resp, err := websocket.DefaultDialer.Dial(u.String(), nil)
+			if resp != nil && resp.Body != nil {
+				resp.Body.Close()
+			}
 			if err != nil {
 				mu.Lock()
 				connectFailCount++
@@ -371,7 +374,7 @@ func TestConcurrentAnswerSubmissions(t *testing.T) {
 	// 結果集計
 	var totalLatency time.Duration
 	var maxLatency time.Duration
-	var minLatency time.Duration = time.Hour
+	minLatency := time.Hour
 	successCount := 0
 	failCount := 0
 
@@ -477,7 +480,10 @@ func TestSystemLoadUnder70Users(t *testing.T) {
 			// 2. WebSocket接続
 			if participantID > 0 {
 				u, _ := url.Parse(WebSocketURL)
-				conn, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
+				conn, resp, err := websocket.DefaultDialer.Dial(u.String(), nil)
+				if resp != nil && resp.Body != nil {
+					resp.Body.Close()
+				}
 
 				if err == nil && conn != nil {
 					defer conn.Close()

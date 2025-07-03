@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"image"
 	"image/jpeg"
-	"image/png"
 	"mime/multipart"
 	"net/textproto"
 	"os"
@@ -246,10 +245,3 @@ func createLargeTestJPEGImage() []byte {
 	return buf.Bytes()
 }
 
-func createTestPNGImage() []byte {
-	img := image.NewRGBA(image.Rect(0, 0, 100, 100))
-
-	var buf bytes.Buffer
-	png.Encode(&buf, img)
-	return buf.Bytes()
-}

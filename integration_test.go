@@ -199,8 +199,14 @@ func TestIntegrationQuizFlow(t *testing.T) {
 		t.Fatalf("Failed to unmarshal login response: %v", err)
 	}
 
-	loginData := loginResp.Data.(map[string]interface{})
-	token := loginData["access_token"].(string)
+	loginData, ok := loginResp.Data.(map[string]interface{})
+	if !ok {
+		t.Fatal("Failed to parse login response data")
+	}
+	token, ok := loginData["access_token"].(string)
+	if !ok {
+		t.Fatal("Failed to parse access token")
+	}
 
 	// 2. クイズ作成
 	quizReq := models.QuizRequest{
@@ -228,8 +234,15 @@ func TestIntegrationQuizFlow(t *testing.T) {
 		t.Fatalf("Failed to unmarshal quiz response: %v", err)
 	}
 
-	quizData := quizResp.Data.(map[string]interface{})
-	quizID := int64(quizData["id"].(float64))
+	quizData, ok := quizResp.Data.(map[string]interface{})
+	if !ok {
+		t.Fatal("Failed to parse quiz response data")
+	}
+	quizIDFloat, ok := quizData["id"].(float64)
+	if !ok {
+		t.Fatal("Failed to parse quiz ID")
+	}
+	quizID := int64(quizIDFloat)
 
 	// 3. セッション開始
 	sessionReq := models.SessionStartRequest{
@@ -266,8 +279,15 @@ func TestIntegrationQuizFlow(t *testing.T) {
 		t.Fatalf("Failed to unmarshal participant response: %v", err)
 	}
 
-	participantData := participantResp.Data.(map[string]interface{})
-	participantID := int64(participantData["participant_id"].(float64))
+	participantData, ok := participantResp.Data.(map[string]interface{})
+	if !ok {
+		t.Fatal("Failed to parse participant response data")
+	}
+	participantIDFloat, ok := participantData["participant_id"].(float64)
+	if !ok {
+		t.Fatal("Failed to parse participant ID")
+	}
+	participantID := int64(participantIDFloat)
 
 	// 5. 回答送信
 	answerReq := models.AnswerRequest{
