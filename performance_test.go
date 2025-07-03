@@ -80,7 +80,7 @@ func createWebSocketDialer() *websocket.Dialer {
 // GitHub Actions環境での設定を取得するヘルパー関数
 func getMaxConcurrentUsers() int {
 	// GitHub Actions環境では少し控えめに設定
-	if os.Getenv("GITHUB_ACTIONS") == "true" {
+	if os.Getenv("GITHUB_ACTIONS") == runPerfTestsEnv {
 		return 50 // GitHub Actions環境では70から50に削減
 	}
 	return MaxConcurrentUsers
@@ -88,7 +88,7 @@ func getMaxConcurrentUsers() int {
 
 func getTestDuration() time.Duration {
 	// GitHub Actions環境では短縮
-	if os.Getenv("GITHUB_ACTIONS") == "true" {
+	if os.Getenv("GITHUB_ACTIONS") == runPerfTestsEnv {
 		return 20 * time.Second // 30秒から20秒に短縮
 	}
 	return TestDuration
@@ -182,14 +182,14 @@ func setupPerformanceTest(t *testing.T) {
 	req, _ := http.NewRequest("GET", BaseURL+"/api/admin/quizzes/2", nil)
 	req.Header.Set("Authorization", "Bearer "+token)
 	quizResp, err := client.Do(req)
-	
+
 	if err != nil || quizResp.StatusCode != http.StatusOK {
 		// クイズID 2が存在しない場合は作成
 		t.Log("テスト用クイズを作成中...")
 		quizReq := models.QuizRequest{
 			QuestionText:  "パフォーマンステスト用問題",
 			OptionA:       "選択肢A",
-			OptionB:       "選択肢B", 
+			OptionB:       "選択肢B",
 			OptionC:       "選択肢C",
 			OptionD:       "選択肢D",
 			CorrectAnswer: "A",
@@ -198,7 +198,7 @@ func setupPerformanceTest(t *testing.T) {
 		req, _ := http.NewRequest("POST", BaseURL+"/api/admin/quizzes", bytes.NewBuffer(quizData))
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Authorization", "Bearer "+token)
-		
+
 		createResp, err := client.Do(req)
 		if err != nil || createResp == nil || createResp.StatusCode != http.StatusCreated {
 			t.Fatalf("テスト用クイズの作成に失敗しました: %v", err)
@@ -680,10 +680,10 @@ func TestSystemLoadUnder70Users(t *testing.T) {
 
 	// システム全体の負荷テスト（GitHub Actions環境を考慮して軽量化）
 	numUsers := getMaxConcurrentUsers()
-	
+
 	// GitHub Actions環境ではより軽量な設定
-	if os.Getenv("GITHUB_ACTIONS") == "true" {
-		numUsers = 20  // 50から20に削減
+	if os.Getenv("GITHUB_ACTIONS") == runPerfTestsEnv {
+		numUsers = 20 // 50から20に削減
 		t.Logf("GitHub Actions環境: ユーザー数を %d に削減", numUsers)
 	}
 
