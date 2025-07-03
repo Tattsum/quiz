@@ -17,6 +17,7 @@ linters-settings:
     locale: US
 
 linters:
+  disable-all: true
   enable:
     - errcheck
     - govet
@@ -53,9 +54,6 @@ linters:
     - unparam
     - wastedassign
     - whitespace
-  disable:
-    - gocyclo
-    - gosimple
 
 issues:
   exclude-use-default: false
