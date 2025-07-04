@@ -401,6 +401,141 @@ runcmd:
 - **コスト可視化**: Terraformによるコスト見積もり
 - **セキュリティ**: コード化されたセキュリティポリシー
 
+---
+
+## 🔧 事前準備チェックリスト
+
+### 1. GCP関連の準備
+- [ ] GCPプロジェクトの作成完了
+- [ ] プロジェクトIDのメモ: _______________
+- [ ] 請求先アカウントの設定完了
+- [ ] 必要なAPIの有効化:
+  - [ ] Compute Engine API
+  - [ ] Cloud SQL Admin API
+  - [ ] Cloud Memorystore for Redis API
+  - [ ] Cloud Storage API
+  - [ ] Secret Manager API
+  - [ ] Cloud Resource Manager API
+- [ ] サービスアカウントの作成（Terraform用）
+- [ ] サービスアカウントキー（JSON）のダウンロード
+- [ ] 適切なIAMロール付与（Editor or 個別権限）
+
+### 2. Cloudflare関連の準備
+- [ ] Cloudflareアカウント作成完了
+- [ ] ドメイン名の取得・設定: _______________
+- [ ] CloudflareにドメインをNS委譲済み
+- [ ] API Token作成（Zone:Edit権限）
+- [ ] Zone IDのメモ: _______________
+
+### 3. GitHub関連の準備
+- [ ] GitHubリポジトリ作成済み
+- [ ] リポジトリへの書き込み権限確認
+- [ ] GitHub Secrets設定準備:
+  - [ ] GCP_SA_KEY（サービスアカウントJSON）
+  - [ ] CLOUDFLARE_API_TOKEN
+  - [ ] その他環境変数
+
+### 4. ローカル環境の準備
+- [ ] Terraform CLI インストール（v1.5以上）
+- [ ] gcloud CLI インストール・認証済み
+- [ ] Docker Desktop インストール済み
+- [ ] エディタ（VS Code推奨）準備
+
+### 5. 認証情報・環境変数の準備
+- [ ] 以下の値を手元に準備:
+  - [ ] GCPプロジェクトID
+  - [ ] GCPリージョン（例: asia-northeast1）
+  - [ ] GCPゾーン（例: asia-northeast1-a）
+  - [ ] Cloudflare API Token
+  - [ ] Cloudflare Zone ID
+  - [ ] ドメイン名
+  - [ ] データベースパスワード（セキュアな値）
+  - [ ] Redisパスワード（セキュアな値）
+
+---
+
+## 📝 Claude Code実装用プロンプト
+
+以下のプロンプトをClaude Codeで使用してください：
+
+```
+私は Go言語のクイズ大会システムのインフラをTerraformでIaC化したいです。
+月額約3,000円の予算で、GCP + Cloudflare構成を実装します。
+
+### プロジェクト情報
+- アプリケーション: Go言語クイズ大会システム（最大70人同時接続）
+- 構成: Go API + Nuxt3管理画面 + Next.js参加者画面
+- 予算: 月額3,000円程度
+- インフラ: GCP（Compute Engine, Cloud SQL, Redis, Storage）+ Cloudflare
+
+### 作成してほしいTerraform構成
+
+1. **ディレクトリ構造の作成**
+   - terraform/environments/dev と prod
+   - terraform/modules/ 以下の各モジュール
+   - GitHub Actions用のワークフロー
+
+2. **Terraformモジュール**
+   - gcp-network: VPC、サブネット、ファイアウォール
+   - gcp-compute: e2-medium インスタンス、cloud-init設定
+   - gcp-database: Cloud SQL（db-f1-micro）、Redis（1GB）
+   - gcp-storage: 画像アップロード用バケット
+   - cloudflare: DNS、SSL/TLS設定
+
+3. **環境別設定**
+   - dev環境: 最小構成、コスト重視
+   - prod環境: 本番用設定、自動バックアップ
+
+4. **CI/CD設定**
+   - terraform-plan.yml: PR時の変更確認
+   - terraform-apply.yml: mainブランチでの自動適用
+
+5. **セキュリティ設定**
+   - Secret Manager統合
+   - 最小権限IAM設定
+   - Cloudflare IPのみ許可
+
+### 既存のファイル情報
+- database_schema.sql: PostgreSQLスキーマ定義
+- docker-compose.yml: アプリケーション構成
+- quiz-app: Goアプリケーションコード
+
+### 環境変数（例）
+- GCP_PROJECT_ID: [実際のプロジェクトID]
+- GCP_REGION: asia-northeast1
+- DOMAIN: [実際のドメイン名]
+- CLOUDFLARE_ZONE_ID: [実際のZone ID]
+
+最初に全体の構成を確認してから、段階的に実装を進めてください。
+コスト最適化を意識し、無料枠を最大限活用する設定にしてください。
+```
+
+---
+
+## 💡 追加の実装時の注意事項
+
+### コスト管理
+- 各リソースの料金を常に意識
+- 無料枠の活用（f1-microインスタンス等）
+- 不要なリソースの自動停止設定
+
+### セキュリティ
+- すべての認証情報はSecret Managerで管理
+- ファイアウォールは最小限のポート開放
+- CloudflareのIPアドレスのみ許可
+
+### 段階的実装
+- まずdev環境で動作確認
+- 問題なければprod環境に展開
+- terraform planで常に変更内容確認
+
+### バックアップ・DR
+- Terraformステートの安全な管理
+- データベースの定期バックアップ設定
+- 災害時の復旧手順書作成
+
+---
+
 ## 📝 備考
 
 - すべてのインフラリソースはTerraformで管理

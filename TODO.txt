@@ -339,10 +339,11 @@ export default function HomePage() {
 
 📂 **[infra-TODO.txt](./infra-TODO.txt)**
 
-### 構成オプション：
-- **Option A: VPSベース構成** （月額約2,000円）
-- **Option B: GCP + Cloudflare構成** （月額約3,000円）
+### 推奨構成：
+- **GCP + Cloudflare + Terraform構成** （月額約3,000円）
+- Infrastructure as Code（IaC）による管理可能な構成
+- 事前準備チェックリスト、実装プロンプト含む
 
-詳細な実装手順、コスト内訳、タスクリストはinfra-TODO.txtを参照してください。
+詳細な実装手順、コスト内訳、事前準備チェックリスト、タスクリストはinfra-TODO.txtを参照してください。
 
 
