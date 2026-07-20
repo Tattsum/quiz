@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-    - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+    - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
     - name: Set up Go
       uses: actions/setup-go@19bb51245e9c80abacb2e91cc42b33fa478b8639 # v4
@@ -48,7 +48,7 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-    - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+    - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
     - name: Set up Go
       uses: actions/setup-go@19bb51245e9c80abacb2e91cc42b33fa478b8639 # v4
@@ -119,7 +119,7 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-    - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+    - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
     - name: Set up Go
       uses: actions/setup-go@19bb51245e9c80abacb2e91cc42b33fa478b8639 # v4
@@ -174,7 +174,7 @@ jobs:
         test-group: [handlers, services, other]
 
     steps:
-    - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+    - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
     - name: Set up Go
       uses: actions/setup-go@19bb51245e9c80abacb2e91cc42b33fa478b8639 # v4
@@ -309,7 +309,7 @@ jobs:
         test-type: [flow-tests, session-tests, concurrent-tests]
 
     steps:
-    - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+    - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
     - name: Set up Go
       uses: actions/setup-go@19bb51245e9c80abacb2e91cc42b33fa478b8639 # v4
@@ -437,7 +437,7 @@ jobs:
           --health-retries 3
 
     steps:
-    - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+    - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
     - name: Set up Go
       uses: actions/setup-go@19bb51245e9c80abacb2e91cc42b33fa478b8639 # v4
@@ -547,7 +547,7 @@ jobs:
     needs: [go-unit-tests, go-integration-tests]
     
     steps:
-    - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+    - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
     - name: Set up Go
       uses: actions/setup-go@19bb51245e9c80abacb2e91cc42b33fa478b8639 # v4
@@ -617,7 +617,7 @@ jobs:
         working-directory: ./admin-dashboard
 
     steps:
-    - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+    - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
     - name: Setup Node.js
       uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
@@ -655,7 +655,7 @@ jobs:
         working-directory: ./participant-app
 
     steps:
-    - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+    - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
     - name: Setup Node.js
       uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
@@ -720,7 +720,7 @@ jobs:
           --tmpfs /data
 
     steps:
-    - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+    - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
     - name: Set up Go
       uses: actions/setup-go@19bb51245e9c80abacb2e91cc42b33fa478b8639 # v4
