@@ -3,7 +3,7 @@ version: '3.8'
 services:
   # PostgreSQL Database for Testing (Optimized)
   postgres-test:
-    image: postgres:15-alpine@sha256:2985f77749c75e90d340b8538dbf55d4e5b2c5396b2f05b7add61a7d8cd50a99
+    image: postgres:18-alpine@sha256:77f585114c32fbca283dc835b0596f4e52b51b4c6662d7810b2f4084f60a1873
     container_name: quiz_postgres_test
     environment:
       POSTGRES_DB: quiz_db_test
