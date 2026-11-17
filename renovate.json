@@ -126,7 +126,9 @@
       "schedule": [
         "on the first day of the month"
       ],
-      "dependencyDashboard": true
+      "dependencyDashboard": {
+        "enabled": true
+      }
     }
   ],
   "vulnerabilityAlerts": {
@@ -135,8 +137,10 @@
       "at any time"
     ]
   },
-  "dependencyDashboard": true,
-  "dependencyDashboardTitle": "Dependency Dashboard",
+  "dependencyDashboard": {
+    "enabled": true,
+    "title": "Dependency Dashboard"
+  },
   "dependencyDashboardApproval": false,
   "commitMessagePrefix": "chore(deps):",
   "commitMessageAction": "{{#if isPin}}pin{{else}}update{{/if}}",
