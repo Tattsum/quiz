@@ -49,7 +49,7 @@ services:
 
   # Redis for Testing (Optimized)
   redis-test:
-    image: redis:7-alpine@sha256:ee9e8748ace004102a267f7b8265dab2c618317df22507b89d16a8add7154273
+    image: redis:8-alpine@sha256:7958cfbb9d152f87dadfbc89f1b0b15938f0b81ff8982feb327476f4911935c3
     container_name: quiz_redis_test
     ports:
       - "6380:6379"
